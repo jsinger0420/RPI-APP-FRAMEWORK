@@ -1,0 +1,84 @@
+Metadata-Version: 2.4
+Name: rpi-app-framework
+Version: 0.1.1
+Summary: A Python framework for building applications on all Raspberry Pi versions, including Pico.
+Home-page: https://github.com/yourusername/rpi-app-framework
+Author: Your Name
+Author-email: John Singer <john@singerlinks.com>
+License-Expression: MIT
+Project-URL: Homepage, https://github.com/yourusername/rpi-app-framework
+Project-URL: Repository, https://github.com/yourusername/rpi-app-framework.git
+Project-URL: Documentation, https://github.com/yourusername/rpi-app-framework/wiki
+Project-URL: Bug Tracker, https://github.com/yourusername/rpi-app-framework/issues
+Keywords: raspberry-pi,pico,framework,app-development,iot
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
+Classifier: Topic :: System :: Hardware
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Provides-Extra: pi
+Requires-Dist: RPi.GPIO>=0.7.0; extra == "pi"
+Provides-Extra: test
+Requires-Dist: pytest>=7.0; extra == "test"
+Requires-Dist: pytest-cov>=4.0; extra == "test"
+Provides-Extra: dev
+Requires-Dist: black>=23.0; extra == "dev"
+Requires-Dist: isort>=5.0; extra == "dev"
+Requires-Dist: flake8>=6.0; extra == "dev"
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
+
+RPi App Framework
+Modular framework for all Raspberry Pi models (Pico 2 W with MicroPython/Thonny, full RPi 1-5 with Python).
+Installation
+For MicroPython/Pico (Thonny):
+
+Copy the rpi_app_framework folder to /lib on your Pico.
+
+For full Python/RPi:
+
+pip install rpi-app-framework
+
+Usage
+Create a main.py to start your app:
+from rpi_app_framework import RPIApp, LEDSimple
+
+class MyApp(RPIApp):
+    def setup(self):
+        self.led = LEDSimple(name="My LED")
+
+    def run(self):
+        while self.running:
+            self.led.blink(count=1)
+            time.sleep(1)
+
+if __name__ == "__main__":
+    app = MyApp()
+    app.start()
+
+Compatibility
+
+Pico 2 W (MicroPython): Uses machine for pins/PWM.
+Full RPi (Python): Uses RPi.GPIO and gpiozero for pins/PWM.
+
+Features
+
+RPIApp: Base class for app lifecycle and logging.
+DeviceManager: Base for hardware managers with logging.
+LEDSimple: Controls LEDs (on/off/blink).
+WiFiManager: Manages WiFi connections (Pico only).
+MotorDriverTB6612FNG: Controls dual DC motors.
+MicrodotManager: Runs a lightweight web server.
+
+See examples/main.py for a full example.

@@ -1,0 +1,23 @@
+# Secrets & credentials
+.pypirc
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Build
+build/
+dist/
+
+# Thonny & IDE
+.thonny/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store

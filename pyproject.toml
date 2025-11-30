@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rpi-app-framework"
+version = "0.1.1"
+description = "A Python framework for building applications on all Raspberry Pi versions, including Pico."
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+authors = [
+    {name = "John Singer", email = "john@singerlinks.com"}
+]
+keywords = ["raspberry-pi", "pico", "framework", "app-development", "iot"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: System :: Hardware"
+]
+dependencies = []
+
+[project.optional-dependencies]
+pi = [
+    "RPi.GPIO>=0.7.0"
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0"
+]
+dev = [
+    "black>=23.0",
+    "isort>=5.0",
+    "flake8>=6.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/rpi-app-framework"
+Repository = "https://github.com/yourusername/rpi-app-framework.git"
+Documentation = "https://github.com/yourusername/rpi-app-framework/wiki"
+"Bug Tracker" = "https://github.com/yourusername/rpi-app-framework/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = {find = {where = ["src"]}}
+
+[tool.setuptools.package-data]
+"rpi_app_framework" = ["*.txt", "*.md"]

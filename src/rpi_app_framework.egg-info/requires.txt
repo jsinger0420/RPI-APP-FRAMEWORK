@@ -1,0 +1,12 @@
+
+[dev]
+black>=23.0
+isort>=5.0
+flake8>=6.0
+
+[pi]
+RPi.GPIO>=0.7.0
+
+[test]
+pytest>=7.0
+pytest-cov>=4.0
