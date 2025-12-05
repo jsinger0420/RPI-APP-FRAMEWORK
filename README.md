@@ -11,20 +11,43 @@ pip install rpi-app-framework
 
 Usage
 Create a main.py to start your app:
-from rpi_app_framework import RPIApp, LEDSimple
+# examples/simple_demo.py
+from rpi_app_framework import RPIApp, PiHardwareAdapter
+import time
 
-class MyApp(RPIApp):
+class SimpleDemo(RPIApp):
+    """
+    Minimal demo that shows:
+      • Board model detection
+      • CPU temperature monitoring
+      • On-board LED blinking
+    Works on Pico 2 W and all full-size Raspberry Pi models.
+    """
+
     def setup(self):
-        self.led = LEDSimple(name="My LED")
+        # Initialise the hardware adapter
+        self.hw = PiHardwareAdapter(log_func=self.log)
+
+        # Use the onboard LED (works on Pico and full RPi)
+        self.status_led = self.hw.led("LED" if "Pico" in self.hw.model else 13)
+
+        # Log startup info
+        self.log(f"Running on: {self.hw.model}")
+        self.log(f"Initial CPU temperature: {self.hw.cpu_temperature}°C")
 
     def run(self):
         while self.running:
-            self.led.blink(count=1)
-            time.sleep(1)
+            # Blink the LED
+            self.status_led.value(1)
+            time.sleep(0.5)
+            self.status_led.value(0)
+
+            # Log temperature every 5 seconds
+            self.log(f"CPU temperature: {self.hw.cpu_temp}°C")
+            time.sleep(4.5)
 
 if __name__ == "__main__":
-    app = MyApp()
-    app.start()
+    SimpleDemo(max_log_files=10).start()
 
 Compatibility
 
@@ -40,4 +63,4 @@ WiFiManager: Manages WiFi connections (Pico only).
 MotorDriverTB6612FNG: Controls dual DC motors.
 MicrodotManager: Runs a lightweight web server.
 
-See examples/main.py for a full example.
+For example applications see projects at www.singerlinks.com
