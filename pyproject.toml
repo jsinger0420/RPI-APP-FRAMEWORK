@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rpi-app-framework"
-version = "0.1.1"
+version = "0.1.2"
 description = "A Python framework for building applications on all Raspberry Pi versions, including Pico."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -43,10 +43,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/rpi-app-framework"
-Repository = "https://github.com/yourusername/rpi-app-framework.git"
-Documentation = "https://github.com/yourusername/rpi-app-framework/wiki"
-"Bug Tracker" = "https://github.com/yourusername/rpi-app-framework/issues"
+Homepage = "https://github.com/jsinger0420/rpi-app-framework"
+Repository = "https://github.com/jsinger0420/rpi-app-framework.git"
+Documentation = "https://github.com/jsinger0420/rpi-app-framework/wiki"
+"Bug Tracker" = "https://github.com/jsinger0420/rpi-app-framework/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
