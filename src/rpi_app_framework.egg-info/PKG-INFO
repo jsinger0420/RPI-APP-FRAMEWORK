@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: rpi-app-framework
-Version: 0.1.2
+Version: 0.1.3
 Summary: A Python framework for building applications on all Raspberry Pi versions, including Pico.
 Home-page: https://github.com/yourusername/rpi-app-framework
 Author: Your Name
