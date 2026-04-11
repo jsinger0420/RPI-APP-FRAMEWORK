@@ -37,6 +37,17 @@ class MicrodotManager(DeviceManager):
         """
         self._log("MicrodotManager setup complete")
 
+    @staticmethod
+    def html_response(html_content):
+        """
+        Create a proper HTML response with correct Content-Type.
+        Use this in route handlers when returning HTML strings.
+
+        Example:
+            return MicrodotManager.html_response("<h1>Hello</h1>")
+        """
+        return html_content, {'Content-Type': 'text/html; charset=utf-8'}
+    
     def add_route(self, path, handler, methods=['GET']):
         """
         Add a route to the web server.
