@@ -1,92 +1,79 @@
-# Conditional imports for cross-platform compatibility
-try:
-    from microdot_asyncio import Microdot
-    MICROPYTHON = True
-except ImportError:
-    from microdot import Microdot  # Full Python version
-    MICROPYTHON = False
-
+# rpi_app_framework/microdot_manager.py
+"""
+Microdot Manager - Cross-platform with original conditional imports preserved
+"""
 from .device_manager import DeviceManager
 import asyncio
 
 class MicrodotManager(DeviceManager):
     """
-    Manager class for running a Microdot web server on Raspberry Pi (Pico 2 W or full RPi).
-    Inherits from DeviceManager for logging and naming.
-    Assumes WiFi is already connected (e.g., via WiFiManager).
-    Supports adding routes and running the server asynchronously.
+    Cross-platform Microdot web server manager.
+    Preserves original conditional import logic for Pico vs Full RPi.
     """
 
-    def __init__(self, name="Web Server", log_func=None, port=80):
-        """
-        Initialize the MicrodotManager instance.
-
-        :param name: Optional custom name for this manager instance (default: "Web Server").
-        :param log_func: Optional function to log messages (e.g., app's log method).
-        :param port: Port to run the web server on (default: 80).
-        """
+    def __init__(self, name="Web Server", log_func=None, port=8080):
         super().__init__(name=name, log_func=log_func)
-        self.app = Microdot()
         self.port = port
-        self._log(f"Microdot web server initialized on port {port}")
+        self.app = None
+        self._is_asyncio = False
+        self._log(f"MicrodotManager initialized on port {port}")
 
     def setup(self):
-        """
-        Setup method for MicrodotManager.
-        Can be overridden to add routes or configure the server.
-        """
-        self._log("MicrodotManager setup complete")
+        """Initialize Microdot with platform-specific import"""
+        if self.app is not None:
+            return
 
-    @staticmethod
-    def html_response(html_content):
-        """
-        Create a proper HTML response with correct Content-Type.
-        Use this in route handlers when returning HTML strings.
-
-        Example:
-            return MicrodotManager.html_response("<h1>Hello</h1>")
-        """
-        return html_content, {'Content-Type': 'text/html; charset=utf-8'}
-    
-    def add_route(self, path, handler, methods=['GET']):
-        """
-        Add a route to the web server.
-
-        :param path: URL path for the route (e.g., '/status').
-        :param handler: Function to handle the route (receives request object).
-        :param methods: List of HTTP methods (e.g., ['GET', 'POST']).
-        """
         try:
-            self.app.route(path, methods=methods)(handler)
-            self._log(f"Added route: {path} ({methods})")
-        except Exception as e:
-            self._log(f"Error adding route {path}: {e}")
-            raise
+            # Pico (MicroPython) - prefers asyncio version
+            from microdot_asyncio import Microdot
+            self.app = Microdot()
+            self._is_asyncio = True
+            self._log("Loaded microdot_asyncio (Pico)")
+        except ImportError:
+            # Full Raspberry Pi or fallback
+            try:
+                from microdot import Microdot
+                self.app = Microdot()
+                self._is_asyncio = False
+                self._log("Loaded standard microdot")
+            except ImportError:
+                self._log("ERROR: microdot package is not installed!")
+                raise ImportError("microdot package is required")
+
+    def add_route(self, path, handler, methods=None):
+        """Add a route to the web server"""
+        if methods is None:
+            methods = ['GET']
+        if self.app is None:
+            self.setup()
+        self.app.route(path, methods=methods)(handler)
+        self._log(f"Route added: {path}")
 
     async def run_server_async(self):
-        """
-        Run the Microdot server asynchronously.
-        Suitable for MicroPython's asyncio or full Python.
-        """
+        """Run the server asynchronously"""
+        if self.app is None:
+            self.setup()
+
+        self._log(f"Starting Microdot server on port {self.port}...")
+
         try:
-            if MICROPYTHON:
-                await self.app.start_server(port=self.port)
+            if self._is_asyncio:
+                # Pico path
+                await self.app.start_server(port=self.port, debug=False)
             else:
-                self.app.run(port=self.port)  # Full Python runs synchronously
-            self._log(f"Web server running on port {self.port}")
+                # Full RPi path
+                self.app.run(port=self.port, debug=False)
         except Exception as e:
-            self._log(f"Error running web server: {e}")
-            raise
+            err_str = str(e).upper()
+            if any(x in err_str for x in ["ECONNABORTED", "103", "CANCELLED", "KEYBOARD"]):
+                self._log("Server stopped normally")
+            else:
+                self._log(f"Server error: {e}")
 
     def run(self):
-        """
-        Synchronous wrapper to run the server (for compatibility).
-        Starts the async server using asyncio.
-        """
-        try:
-            asyncio.run(self.run_server_async())
-        except KeyboardInterrupt:
-            self._log("Web server stopped by user")
-        except Exception as e:
-            self._log(f"Error in web server: {e}")
-            raise
+        """Synchronous wrapper (for compatibility with full RPi)"""
+        asyncio.run(self.run_server_async())
+
+    def stop(self):
+        """Signal to stop the server"""
+        self._log("Stop requested")
