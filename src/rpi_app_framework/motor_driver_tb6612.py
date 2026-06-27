@@ -210,17 +210,15 @@ class MotorDriverTB6612FNG(DeviceManager):
         setattr(self, dir_attr, 'forward')
         self._log(f"{actual_name} forward at {speed}%")
 
-    def backward(self, motor_name, speed=100):
+    def reverse(self, motor_name, speed=100):
         """
-        Set the specified motor to backward direction with speed.
-
-        :param motor_name: The motor name ("Motor A" or "Motor B").
-        :param speed: Speed from 0 to 100 (default: 100).
-        :raises ValueError: If motor_name is invalid or speed is out of range.
+        Reverse direction with the given speed.
         """
         if not 0 <= speed <= 100:
             raise ValueError("Speed must be between 0 and 100")
+
         pwm, dir1, dir2, actual_name, speed_attr, dir_attr = self._get_motor_functions(motor_name)
+
         if MICROPYTHON:
             dir1.value(0)
             dir2.value(1)
@@ -229,9 +227,10 @@ class MotorDriverTB6612FNG(DeviceManager):
             GPIO.output(dir1, GPIO.LOW)
             GPIO.output(dir2, GPIO.HIGH)
             pwm.value = speed / 100.0
+
         setattr(self, speed_attr, speed)
-        setattr(self, dir_attr, 'backward')
-        self._log(f"{actual_name} backward at {speed}%")
+        setattr(self, dir_attr, 'reverse')
+        self._log(f"{actual_name} reverse at {speed}%")
 
     def stop_motor(self, motor_name):
         """
