@@ -22,6 +22,13 @@ class RPIApp:
     """
 
     def __init__(self, app_name="RPIApp", max_log_files=10, enable_file_logging=True):
+        """
+        Initialize the RPIApp instance.
+
+        :param app_name: Name of the application (used in logs and directories).
+        :param max_log_files: Maximum number of log files to retain.
+        :param enable_file_logging: If False, logs only print to console.
+        """
         self.running = False
         self._app_name = app_name
         self._max_log_files = max_log_files
@@ -36,6 +43,7 @@ class RPIApp:
     # ----------------------------------------------------------------------
 
     def _prepare_log_directory(self):
+        """Create log directory for this app if file logging is enabled."""
         if not self._enable_file_logging:
             return
 
@@ -43,6 +51,7 @@ class RPIApp:
         app_dir = base_dir + "/" + self._app_name
 
         try:
+            # MicroPython-safe mkdir: ignore "already exists"
             try:
                 os.mkdir(base_dir)
             except OSError:
@@ -61,6 +70,7 @@ class RPIApp:
             self._enable_file_logging = False
 
     def _rotate_logs(self):
+        """Rotate old log files, keeping only the most recent N."""
         if not self._enable_file_logging or not getattr(self, "_log_dir", None):
             return
 
@@ -80,6 +90,7 @@ class RPIApp:
             print("Error managing log files:", e)
 
     def _open_log_file(self):
+        """Open a new log file for this session."""
         if not self._enable_file_logging or not getattr(self, "_log_dir", None):
             return
 
@@ -106,17 +117,22 @@ class RPIApp:
             print(f"Error opening log file: {e}")
             self._enable_file_logging = False
 
-
     def _timestamp(self):
+        """Return a formatted timestamp."""
         t = time.localtime()
 
+        # RTC invalid → use ticks for readable in‑log timestamps
         if t[0] < 2022:
-            # Keep log entries readable even without RTC
             return f"TICKS-{time.ticks_ms()}"
 
         return f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d} {t[3]:02d}:{t[4]:02d}:{t[5]:02d}"
 
     def log(self, message):
+        """
+        Log a message with timestamp and app name.
+        Interrupt-safe: swallows KeyboardInterrupt during logging so shutdown
+        cannot be interrupted by Thonny's multiple interrupts.
+        """
         try:
             ts = self._timestamp()
             line = f"[{ts}] [{self._app_name}] {message}"
@@ -127,6 +143,7 @@ class RPIApp:
                 self._log_file.flush()
 
         except KeyboardInterrupt:
+            # Thonny sends multiple interrupts; ignore them during logging
             pass
         except Exception as e:
             print(f"Logging error: {e}")
@@ -137,9 +154,20 @@ class RPIApp:
 
     @property
     def app_name(self):
+        """Return the application name."""
         return self._app_name
 
     def start(self):
+        """
+        Start the application lifecycle with global safe-shutdown handling.
+
+        This wrapper ensures:
+        - setup() is always called before run()
+        - Any exception inside run() is caught
+        - KeyboardInterrupt (Thonny Stop) triggers a clean shutdown
+        - stop() is always executed exactly once
+        - Logs are flushed before exit
+        """
         self.running = True
         self.log(f"{self.app_name} starting")
 
@@ -154,21 +182,29 @@ class RPIApp:
         except Exception as e:
             self.log(f"Unhandled exception: {e!r}")
             self.stop()
-            raise
+            raise  # rethrow so developer sees traceback
 
         else:
+            # Normal exit from run()
             self.stop()
 
         finally:
             self.log(f"{self.app_name} stopped")
 
     def setup(self):
+        """Override in subclass. Called once before run()."""
         pass
 
     def run(self):
+        """Override in subclass. Main application loop."""
         pass
 
     def stop(self):
+        """
+        Stop the application.
+        Sets running=False and logs the stop.
+        Subclasses should override for hardware cleanup, but must call super().
+        """
         self.running = False
         self.log(f"{self.app_name} stopped")
 
