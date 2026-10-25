@@ -11,13 +11,16 @@ are allowed (ADR-002). Suggested order — each numbered step is one branch / on
 conversation.
 
 ### Step 1 — Repo hygiene · `chore/repo-hygiene`
-- ◐ Add `.gitattributes` (`* text=auto eol=lf`) — file added; still to commit and run `git add --renormalize .`
-- ☐ Untrack `src/rpi_app_framework.egg-info/` (`git rm -r --cached`).
-- ☐ Delete `setup.py` (stale; `pyproject.toml` is authoritative).
-- ☐ Delete `hardware.py` (duplicate of `pi_hardware_adapter.py`) and
+- ☑ Add `.gitattributes` (`* text=auto eol=lf`); `git add --renormalize .` found
+      nothing left to convert.
+- ☑ Untrack `src/rpi_app_framework.egg-info/` (`git rm -r --cached`).
+- ☑ Delete `setup.py` (stale; `pyproject.toml` is authoritative).
+- ☑ Delete `hardware.py` (duplicate of `pi_hardware_adapter.py`) and
       `microdot_manager_old.py`.
-- ☐ Add `CHANGELOG.md` with history for 0.1.2–0.1.5 reconstructed from git tags.
-- ☐ Move `.pypirc` out of the repo folder (local action, not a commit).
+- ☑ Add `CHANGELOG.md` with history for 0.1.1–0.1.5 reconstructed from git
+      (0.1.2 was never tagged; it is commit `5e642e9`).
+- ◐ Move `.pypirc` out of the repo folder (local action, not a commit). It was
+      never committed and is in `.gitignore`, but the folder syncs to OneDrive.
 
 ### Step 2 — Platform layer · `feature/platform-layer`
 - ☐ Mark ADR-003 Accepted after review.
