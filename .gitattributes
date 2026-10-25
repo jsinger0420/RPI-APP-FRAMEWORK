@@ -1,0 +1,9 @@
+# Normalize line endings: LF in the repo, native on checkout handled by editors.
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.wav binary
+*.whl binary
+*.gz binary
