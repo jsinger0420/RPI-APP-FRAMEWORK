@@ -67,7 +67,9 @@ Check `docs/ROADMAP.md` for what is actually done.
 
 ## Environment notes
 
-- Local repo: `C:\Users\Jsing\OneDrive - SingerLinks\THONNY\RPI-APP\RPI-APP-FRAMEWORK`
+- Local repo: `C:\Users\Jsing\dev\RPI-APP-FRAMEWORK` (outside OneDrive; GitHub is the backup,
+  so push branches at the end of each session).
+- PyPI credentials: `C:\Users\Jsing\.pypirc` (never inside the repo).
 - GitHub: https://github.com/jsinger0420/RPI-APP-FRAMEWORK (default branch `main`, PRs from feature branches)
 - PyPI: https://pypi.org/project/rpi-app-framework/
 - Owner develops in Thonny on Windows; Pico code is deployed by copying
