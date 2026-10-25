@@ -1,100 +1,100 @@
-# rpi_app_framework/solenoid_valve.py
-"""
-Device manager for controlling a 12V DC Normally Closed solenoid valve
-(1/4" inlet water valve) using a single GPIO pin via MOSFET/relay.
-Compatible with Raspberry Pi Pico (MicroPython) and full Raspberry Pi boards.
-Used primarily for garden/yard watering systems
+"""12 V DC normally-closed solenoid valve driven through a MOSFET or relay.
+
+One GPIO pin switches the valve (e.g. a 1/4" inlet water valve for garden or
+yard watering). Works on the Pico (MicroPython) and on Raspberry Pi OS, where
+the pin is driven through gpiozero (ADR-003).
+
+Typical usage:
+
+    valve = SolenoidValve(control_pin=15, name="zone1", log_func=app.log)
+    valve.pulse(open_duration_ms=2000)
 """
 
-# Conditional imports for cross-platform compatibility
-try:
-    from machine import Pin
-    MICROPYTHON = True
-except ImportError:
-    import RPi.GPIO as GPIO
-    MICROPYTHON = False
-
-from .device_manager import DeviceManager
 import time
 
-class SolenoidValve(DeviceManager):
-    """
-    Manager class for a 12V DC Normally Closed solenoid valve.
-    Controls valve state (open/closed) via a GPIO pin connected to a MOSFET or relay module.
-    Inherits from DeviceManager for consistent logging and naming.
+from ._platform import IS_MICROPYTHON, require
+from .device_manager import DeviceManager
 
-    Electrical notes:
-    - Solenoid is energized (open) when control pin is HIGH.
-    - Solenoid is de-energized (closed) when control pin is LOW.
-    - Requires external 12V power supply and logic-level MOSFET/relay.
+
+class SolenoidValve(DeviceManager):
+    """Normally-closed solenoid valve controlled by one GPIO pin.
+
+    Electrical notes: the valve opens when the solenoid is energized. Needs an
+    external 12 V supply and a logic-level MOSFET or relay module.
+
+    Platforms:
+        Pico (MicroPython, ``machine.Pin``) and Raspberry Pi (CPython,
+        ``gpiozero.DigitalOutputDevice``; install with
+        ``pip install rpi-app-framework[gpio]``).
+
+    Attributes:
+        control_pin: GPIO pin driving the MOSFET gate or relay input.
+        active_high (bool): True if a HIGH level opens the valve.
     """
 
     def __init__(self, control_pin, name="Solenoid Valve", log_func=None, active_high=True):
-        """
-        Initialize the SolenoidValve manager.
+        """Initialize the valve and make sure it is closed.
 
         Args:
-            control_pin (int or str): GPIO pin connected to MOSFET/relay gate/input
-                                     ("LED" allowed on Pico for onboard testing)
-            name (str, optional): Custom name for logging (default: "Solenoid Valve")
-            log_func (callable, optional): Logging function (usually app.log)
-            active_high (bool): True = HIGH opens valve, False = LOW opens valve
-                               (most modules are active-high)
+            control_pin: GPIO pin connected to the MOSFET gate or relay input.
+                On the Pico a pin number (or ``"LED"`` for bench testing); on
+                Raspberry Pi OS a BCM GPIO number (0-27).
+            name: Name used in log lines.
+            log_func: Function called with each log line, e.g. ``app.log``.
+            active_high: True if a HIGH level opens the valve (most modules),
+                False if a LOW level opens it.
+
+        Raises:
+            ValueError: If ``name`` is invalid.
+            ImportError: On Linux, if gpiozero is not installed.
         """
         super().__init__(name=name, log_func=log_func)
         self.control_pin = control_pin
         self.active_high = active_high
 
-        # Setup pin
-        if MICROPYTHON:
+        if IS_MICROPYTHON:
+            from machine import Pin
+
             self.pin = Pin(control_pin, Pin.OUT)
-            self.pin.value(0)  # Start closed
         else:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(control_pin, GPIO.OUT)
-            GPIO.output(control_pin, GPIO.LOW)  # Start closed
+            gpiozero = require("gpiozero", extra="gpio", feature="SolenoidValve")
+            # gpiozero handles the polarity: on() always means "open".
+            self.pin = gpiozero.DigitalOutputDevice(
+                int(control_pin), active_high=active_high, initial_value=False
+            )
 
         self._is_open = False
+        self._write(False)  # start closed
         self._log(f"{self.name} initialized on pin {control_pin} (active_high={active_high}) - closed")
 
+    def _write(self, open_):
+        """Drive the control pin so the valve is open or closed.
+
+        Args:
+            open_: True to open (energize), False to close.
+        """
+        if IS_MICROPYTHON:
+            level = 1 if open_ == self.active_high else 0
+            self.pin.value(level)
+        elif open_:
+            self.pin.on()
+        else:
+            self.pin.off()
+
     def open_valve(self):
-        """
-        Energize the solenoid → open the valve.
-        """
-        if self.active_high:
-            value = 1
-        else:
-            value = 0
-
-        if MICROPYTHON:
-            self.pin.value(value)
-        else:
-            GPIO.output(self.control_pin, value)
-
+        """Energize the solenoid to open the valve."""
+        self._write(True)
         self._is_open = True
         self._log(f"{self.name} OPENED")
 
     def close_valve(self):
-        """
-        De-energize the solenoid → close the valve (normal state).
-        """
-        if self.active_high:
-            value = 0
-        else:
-            value = 1
-
-        if MICROPYTHON:
-            self.pin.value(value)
-        else:
-            GPIO.output(self.control_pin, value)
-
+        """De-energize the solenoid to close the valve (its normal state)."""
+        self._write(False)
         self._is_open = False
         self._log(f"{self.name} CLOSED")
 
     def toggle(self):
-        """
-        Toggle valve state (open ↔ closed).
-        """
+        """Close the valve if it is open, or open it if it is closed."""
         if self._is_open:
             self.close_valve()
         else:
@@ -102,19 +102,17 @@ class SolenoidValve(DeviceManager):
 
     @property
     def is_open(self):
-        """
-        Returns True if the valve is currently energized (open).
-        """
+        """bool: True if the valve is currently energized (open)."""
         return self._is_open
 
     def pulse(self, open_duration_ms=500, close_duration_ms=0):
-        """
-        Open valve for a short time (pulse), then close it again.
-        Useful for precise water dispensing.
+        """Open the valve briefly, then close it. Blocks until done.
+
+        Useful for dispensing a measured amount of water.
 
         Args:
-            open_duration_ms (int/float): Time valve stays open (milliseconds)
-            close_duration_ms (int/float): Optional extra delay after closing
+            open_duration_ms: Time the valve stays open, in milliseconds.
+            close_duration_ms: Extra delay after closing, in milliseconds.
         """
         self.open_valve()
         time.sleep(open_duration_ms / 1000.0)
@@ -124,9 +122,13 @@ class SolenoidValve(DeviceManager):
         self._log(f"{self.name} pulsed for {open_duration_ms} ms")
 
     def cleanup(self):
+        """Close the valve and release the GPIO pin.
+
+        On Raspberry Pi OS this releases only this valve's pin (the old
+        ``RPi.GPIO.cleanup()`` reset every pin in the process).
         """
-        Release GPIO resources (important on full RPi).
-        """
-        if not MICROPYTHON:
-            GPIO.cleanup()
+        self._write(False)
+        self._is_open = False
+        if not IS_MICROPYTHON:
+            self.pin.close()
         self._log(f"{self.name} GPIO cleaned up")

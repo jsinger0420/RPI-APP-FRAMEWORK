@@ -23,17 +23,27 @@ conversation.
       repo itself moved out of OneDrive to `C:\Users\Jsing\dev\RPI-APP-FRAMEWORK`.
 
 ### Step 2 — Platform layer · `feature/platform-layer`
-- ☐ Mark ADR-003 Accepted after review.
-- ☐ Add `_platform.py`: `IS_MICROPYTHON`, `BOARD`, `board_model()`, `require()`,
-      `ticks_ms()`/`ticks_diff()` helpers.
-- ☐ Remove top-level `RPi.GPIO`/`gpiozero` imports from `rpi_app.py` and
+- ☑ Mark ADR-003 Accepted (on the branch; reviewed in the PR).
+- ☑ Add `_platform.py`: `IS_MICROPYTHON`, `IS_LINUX`, `BOARD`, `board_model()`,
+      `require()`, `ticks_ms()`/`ticks_diff()` helpers.
+- ☑ Remove top-level `RPi.GPIO`/`gpiozero` imports from `rpi_app.py` and
       `device_manager.py`.
-- ☐ Fix broken imports in `sound_stream.py` and `sound_mixer.py`
+- ☑ Fix broken imports in `sound_stream.py` and `sound_mixer.py`
       (`devicemanager` → `.device_manager`).
-- ☐ Convert all absolute self-imports to relative.
-- ☐ Make `__init__.py` import only core; add PEP 562 lazy access on CPython.
-- ☐ Replace `RPi.GPIO` with gpiozero in `led_simple`, `solenoid_valve`,
-      `motor_driver_tb6612`, `pi_hardware_adapter`.
+- ☑ Convert all absolute self-imports to relative (`I2SDACdevice_manager`,
+      `MJPEGRequestHandler`, `wifi_manager`).
+- ☑ Make `__init__.py` import only core; add PEP 562 lazy access on CPython.
+      `__version__` now comes from package metadata.
+- ☑ Replace `RPi.GPIO` with gpiozero in `led_simple`, `solenoid_valve`,
+      `motor_driver_tb6612`, `pi_hardware_adapter`. `pi` extra → gpiozero; new
+      `gpio` extra.
+- ☐ Verify on hardware: Pico 2 W (incl. whether `from rpi_app_framework import
+      LEDSimple` works via module `__getattr__`), Pi 4, Pi 5. Tested so far only on a
+      PC with gpiozero `MockFactory` and a simulated MicroPython environment.
+- Carried to Step 5: `ble_manager` fails to import on a PC (`linux_ble_gatt`);
+  `joystick_xy_manager`, `positional_servo_manager` (pigpio, no Pi 5),
+  `I2SDACdevice_manager`, `cameradevicemanager`, `motion_detector` still import
+  optional libraries at top level. The Step 4 import-smoke test will flag these.
 
 ### Step 3 — Core lifecycle · `feature/core-lifecycle`
 - ☐ Mark ADR-004 Accepted after review.
@@ -95,5 +105,5 @@ See `docs/decisions/`.
 |---|---|---|
 | 001 | Google-style docstrings | Accepted |
 | 002 | Breaking API changes allowed in 0.2; `name` first in constructors | Accepted |
-| 003 | `_platform.py` and gpiozero instead of RPi.GPIO | Proposed |
+| 003 | `_platform.py` and gpiozero instead of RPi.GPIO | Accepted |
 | 004 | Device registry and uniform `close()` | Proposed |

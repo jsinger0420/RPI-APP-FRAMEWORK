@@ -1,27 +1,91 @@
-# rpi_app_framework/__init__.py - Package initializer with absolute exports
-# This allows users to import directly from the package root, e.g.:
-# from rpi_app_framework import RPIApp, DeviceManager, LEDSimple, etc.
+"""rpi-app-framework: application lifecycle and device managers for Raspberry Pi.
 
-from .rpi_app import RPIApp
+Importing the package loads only the core: :class:`RPIApp`,
+:class:`DeviceManager` and ``__version__``. Device managers live in their own
+modules so a Pico blink app does not pay the RAM cost of WiFi, motor or ADC
+code:
+
+    from rpi_app_framework import RPIApp
+    from rpi_app_framework.led_simple import LEDSimple
+
+On CPython the short form ``from rpi_app_framework import LEDSimple`` also
+works; the module is imported on first access (PEP 562). MicroPython supports
+this only if the firmware was built with module ``__getattr__`` support, so
+Pico code should use the explicit module path.
+"""
+
+import sys
+
 from .device_manager import DeviceManager
-from .led_simple import LEDSimple
-from .wifi_manager import WiFiManager
-from .motor_driver_tb6612 import MotorDriverTB6612FNG
-from .microdot_manager import MicrodotManager
-from .pi_hardware_adapter import PiHardwareAdapter
-from .power_monitor import PowerMonitor      # ← Added
-from .ads1x15 import ADS1x15                 # Useful to export as well
+from .rpi_app import RPIApp
 
-__version__ = "0.1.2"   # bumped version
+_FALLBACK_VERSION = "0.1.5"
 
-__all__ = [
-    'RPIApp',
-    'DeviceManager',
-    'LEDSimple',
-    'WiFiManager',
-    'MotorDriverTB6612FNG',
-    'MicrodotManager',
-    'PiHardwareAdapter',
-    'PowerMonitor',          # ← Added
-    'ADS1x15',               # ← Added (recommended)
-]
+try:
+    from importlib.metadata import PackageNotFoundError, version as _version
+
+    try:
+        __version__ = _version("rpi-app-framework")
+    except PackageNotFoundError:
+        __version__ = _FALLBACK_VERSION
+except ImportError:
+    # MicroPython, or CPython < 3.8.
+    __version__ = _FALLBACK_VERSION
+
+# Public class name -> module that defines it. Imported lazily by __getattr__.
+_LAZY_EXPORTS = {
+    "ADS1x15": "ads1x15",
+    "BLEManager": "ble_manager",
+    "CameraDeviceManager": "cameradevicemanager",
+    "I2SDACDeviceManager": "I2SDACdevice_manager",
+    "JoystickXYManager": "joystick_xy_manager",
+    "LEDSimple": "led_simple",
+    "MicrodotManager": "microdot_manager",
+    "MJPEGStreamingManager": "MJPEGRequestHandler",
+    "MotionDetector": "motion_detector",
+    "MotorDriverTB6612FNG": "motor_driver_tb6612",
+    "PiHardwareAdapter": "pi_hardware_adapter",
+    "PositionalServoManager": "positional_servo_manager",
+    "PowerMonitor": "power_monitor",
+    "SolenoidValve": "solenoid_valve",
+    "SoundMixer": "sound_mixer",
+    "SoundStream": "sound_stream",
+    "WiFiManager": "wifi_manager",
+}
+
+# Only the core is listed, so "from rpi_app_framework import *" stays cheap
+# and never fails because an optional library is missing.
+__all__ = ["RPIApp", "DeviceManager", "__version__"]
+
+
+def __getattr__(name):
+    """Import a device manager class on first access (PEP 562).
+
+    Args:
+        name: Attribute requested from the package, e.g. ``"LEDSimple"``.
+
+    Returns:
+        The requested class.
+
+    Raises:
+        AttributeError: If ``name`` is not a known export.
+        ImportError: If the defining module needs a library that is not
+            installed (the message names the pip extra).
+    """
+    module_name = _LAZY_EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError("module {!r} has no attribute {!r}".format(__name__, name))
+    full_name = __name__ + "." + module_name
+    __import__(full_name)
+    value = getattr(sys.modules[full_name], name)
+    globals()[name] = value  # cache so __getattr__ is not called again
+    return value
+
+
+def __dir__():
+    """Return the package attributes, including lazily imported classes.
+
+    Returns:
+        Sorted list of attribute names.
+    """
+    return sorted(list(globals().keys()) + list(_LAZY_EXPORTS.keys()))

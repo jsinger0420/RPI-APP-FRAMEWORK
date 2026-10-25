@@ -1,4 +1,5 @@
-from rpi_app_framework import RPIApp, LEDSimple
+from rpi_app_framework import RPIApp
+from rpi_app_framework.led_simple import LEDSimple
 import time
 class MyApp(RPIApp):
     """

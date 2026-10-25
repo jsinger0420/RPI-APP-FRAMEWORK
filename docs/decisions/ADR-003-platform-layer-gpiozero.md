@@ -1,7 +1,7 @@
 # ADR-003: `_platform.py` and gpiozero instead of RPi.GPIO
 
-- **Status:** Proposed
-- **Date:** 2026-10-24
+- **Status:** Accepted (implemented in v0.2.0 Step 2, `feature/platform-layer`)
+- **Date:** 2026-10-24 (accepted 2026-10-25)
 
 ## Context
 - Platform detection is duplicated across modules in four different ways.
@@ -22,3 +22,7 @@
   `rpi_app`, and `device_manager` change.
 - Behavior on Pi 1–4 must be re-verified on hardware after the switch.
 - Tests can stub `machine` and `gpiozero` to exercise both code paths on a PC.
+- `cleanup()` methods release only the pins that device created, instead of
+  `RPi.GPIO.cleanup()` resetting every pin in the process.
+- The `pi` extra now installs gpiozero; it is kept as a deprecated alias of the new
+  `gpio` extra until 0.3.0.

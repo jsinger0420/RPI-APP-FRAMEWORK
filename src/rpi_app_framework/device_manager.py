@@ -1,83 +1,102 @@
-# Conditional imports for cross-platform compatibility
-try:
-    from machine import Pin, PWM
-    MICROPYTHON = True
-except ImportError:
-    import RPi.GPIO as GPIO
-    from gpiozero import LED, PWMOutputDevice as PWMLED
-    MICROPYTHON = False
+"""Base class for all device managers.
+
+A device manager wraps one piece of hardware (an LED, a motor driver, a sensor,
+a radio, a web server) and gives it a validated name and integrated logging.
+This module has no hardware imports, so it loads on a Pico, on Raspberry Pi OS,
+and on a plain PC.
+
+Typical usage:
+
+    class Buzzer(DeviceManager):
+        def __init__(self, name=None, log_func=None):
+            super().__init__(name=name, log_func=log_func)
+            self._log("buzzer ready")
+"""
+
+_NAME_MAX_LEN = 50
+_NAME_ALLOWED = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-"
+
 
 class DeviceManager:
-    """
-    Abstract base class for device managers.
-    Provides common logging functionality and device naming with validation.
-    Supports Pico (MicroPython) and full RPi (Python) via conditional imports.
+    """Base class for device managers: naming and logging.
+
+    Subclasses add the hardware control. The lifecycle contract
+    (``close()``, ``is_open``, ``app=``) arrives in v0.2.0 Step 3 (ADR-004).
+
+    Platforms:
+        Pico (MicroPython), Raspberry Pi (CPython), and a plain PC.
+
+    Attributes:
+        logging_enabled (bool): If False, :meth:`_log` does nothing.
+        log_func (callable or None): Function that receives log lines, usually
+            ``RPIApp.log``. If None, lines are printed.
     """
 
     def __init__(self, name=None, log_func=None):
-        """
-        Initialize the DeviceManager instance.
+        """Initialize the device manager.
 
-        :param name: Optional custom name for the device instance (defaults to class name).
-                     Must be a non-empty string, max 50 characters, alphanumeric with spaces/underscores/dashes.
-        :param log_func: Optional function to log messages (e.g., app's log method).
-        :raises ValueError: If name is invalid.
+        Args:
+            name: Name used in log lines. Defaults to the class name. Must be a
+                non-empty string of at most 50 characters containing only
+                letters, digits, spaces, underscores and dashes.
+            log_func: Function called with each log line, e.g. ``app.log``.
+                If None, lines are printed.
+
+        Raises:
+            ValueError: If ``name`` is invalid.
         """
-        self.logging_enabled = True  # Default to logging enabled
+        self.logging_enabled = True
         self.log_func = log_func
         self._validate_name(name)
-        self._name = name or self.__class__.__name__  # Use provided name or class name
+        self._name = name or self.__class__.__name__
 
     def _validate_name(self, name):
-        """
-        Validate the device name.
+        """Check that ``name`` is a valid device name.
 
-        :param name: The name to validate.
-        :raises ValueError: If name is invalid (not a string, empty, too long, or contains invalid characters).
+        Args:
+            name: The name to validate, or None to use the class name.
+
+        Raises:
+            ValueError: If ``name`` is not a string, is empty, is longer than
+                50 characters, or contains characters other than letters,
+                digits, spaces, underscores and dashes.
         """
         if name is None:
-            return  # Will default to class name, which is valid
+            return
         if not isinstance(name, str):
             raise ValueError("Device name must be a string")
         if len(name.strip()) == 0:
             raise ValueError("Device name cannot be empty")
-        if len(name) > 50:
+        if len(name) > _NAME_MAX_LEN:
             raise ValueError("Device name must be 50 characters or fewer")
-        # Allow alphanumeric, spaces, underscores, dashes; no other special chars for log/file safety
-        import re
-        if not re.match(r'^[a-zA-Z0-9 _\-]+$', name):
-            raise ValueError("Device name can only contain alphanumeric characters, spaces, underscores, and dashes")
+        for ch in name:
+            if ch not in _NAME_ALLOWED:
+                raise ValueError(
+                    "Device name can only contain alphanumeric characters, "
+                    "spaces, underscores, and dashes"
+                )
 
     @property
     def name(self):
-        """
-        Get the device name.
-
-        :return: The name of the device.
-        """
+        """str: The device name used in log lines (read-only)."""
         return self._name
 
     def enable_logging(self):
-        """
-        Enable logging for the device.
-        """
+        """Turn on logging for this device."""
         self.logging_enabled = True
 
     def disable_logging(self):
-        """
-        Disable logging for the device.
-        """
+        """Turn off logging for this device."""
         self.logging_enabled = False
 
     def _log(self, message):
-        """
-        Internal method to log a message if logging is enabled.
-        Prefixes the message with the device name.
+        """Log ``message`` prefixed with ``[name]`` if logging is enabled.
 
-        :param message: The message to log.
+        Args:
+            message: Text to log.
         """
         if self.logging_enabled:
-            prefixed_message = f"[{self.name}] {message}"
+            prefixed_message = "[{}] {}".format(self.name, message)
             if self.log_func:
                 self.log_func(prefixed_message)
             else:

@@ -24,7 +24,7 @@ except ImportError:
     import re
     MICROPYTHON = False
 
-from rpi_app_framework.device_manager import DeviceManager
+from .device_manager import DeviceManager
 
 import os
 

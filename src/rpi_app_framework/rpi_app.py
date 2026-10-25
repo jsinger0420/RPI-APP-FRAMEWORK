@@ -1,33 +1,54 @@
-# Conditional imports for cross-platform compatibility
-try:
-    from machine import Pin
-    MICROPYTHON = True
-except ImportError:
-    import RPi.GPIO as GPIO
-    MICROPYTHON = False
+"""Application lifecycle base class.
 
-import time
+Subclass :class:`RPIApp`, override :meth:`RPIApp.setup` and :meth:`RPIApp.run`,
+and call :meth:`RPIApp.start`. The framework handles logging (console and
+rotating log files) and safe shutdown on normal exit, Ctrl-C / Thonny Stop, or
+an unhandled exception. Works on Pico (MicroPython), Raspberry Pi (CPython) and
+a plain PC; this module has no hardware imports.
+
+Typical usage:
+
+    class Blink(RPIApp):
+        def setup(self):
+            self.led = LEDSimple(pin="LED", log_func=self.log)
+
+        def run(self):
+            while self.running:
+                self.led.toggle()
+                time.sleep(0.5)
+
+    Blink(app_name="Blink").start()
+"""
+
 import os
+import time
+
+from ._platform import ticks_ms
 
 
 class RPIApp:
-    """
-    Base class for Raspberry Pi applications (Pico 2 W or full RPi).
+    """Base class for Raspberry Pi applications.
 
-    Provides:
-    - Application lifecycle (start → setup → run → stop)
-    - Logging with timestamps and per-app log directories
-    - Global safe-shutdown handling (KeyboardInterrupt + unexpected exceptions)
-    - Cross-platform compatibility (MicroPython vs full Python)
+    Provides the lifecycle ``start -> setup -> run -> stop``, logging with
+    timestamps to the console and to per-app log files, and safe shutdown on
+    ``KeyboardInterrupt`` or unexpected exceptions.
+
+    Platforms:
+        Pico (MicroPython), Raspberry Pi (CPython), and a plain PC.
+
+    Attributes:
+        running (bool): True between :meth:`start` and :meth:`stop`. ``run()``
+            loops should poll it.
     """
 
     def __init__(self, app_name="RPIApp", max_log_files=10, enable_file_logging=True):
-        """
-        Initialize the RPIApp instance.
+        """Initialize the application and open its log file.
 
-        :param app_name: Name of the application (used in logs and directories).
-        :param max_log_files: Maximum number of log files to retain.
-        :param enable_file_logging: If False, logs only print to console.
+        Args:
+            app_name: Name of the application, used in log lines and as the
+                log directory ``LOGFILES/<app_name>``.
+            max_log_files: Number of log files to keep; older ones are deleted.
+            enable_file_logging: If False, log lines are only printed.
         """
         self.running = False
         self._app_name = app_name
@@ -104,7 +125,7 @@ class RPIApp:
                     hexid = os.urandom(4).hex()
                 except:
                     # Fallback if urandom unavailable
-                    hexid = str(time.ticks_ms())
+                    hexid = str(ticks_ms())
                 timestamp = f"rand_{hexid}"
             else:
                 timestamp = self._timestamp().replace(" ", "_").replace(":", "-")
@@ -118,20 +139,28 @@ class RPIApp:
             self._enable_file_logging = False
 
     def _timestamp(self):
-        """Return a formatted timestamp."""
+        """Return the current time as ``YYYY-MM-DD HH:MM:SS``.
+
+        Returns:
+            The formatted time, or ``TICKS-<ms>`` if the clock is not set
+            (year < 2022, e.g. a standalone Pico).
+        """
         t = time.localtime()
 
         # RTC invalid → use ticks for readable in‑log timestamps
         if t[0] < 2022:
-            return f"TICKS-{time.ticks_ms()}"
+            return f"TICKS-{ticks_ms()}"
 
         return f"{t[0]:04d}-{t[1]:02d}-{t[2]:02d} {t[3]:02d}:{t[4]:02d}:{t[5]:02d}"
 
     def log(self, message):
-        """
-        Log a message with timestamp and app name.
-        Interrupt-safe: swallows KeyboardInterrupt during logging so shutdown
-        cannot be interrupted by Thonny's multiple interrupts.
+        """Log a message with timestamp and app name to console and file.
+
+        Interrupt-safe: a ``KeyboardInterrupt`` raised while logging is ignored,
+        so Thonny's repeated interrupts cannot break shutdown.
+
+        Args:
+            message: Text to log.
         """
         try:
             ts = self._timestamp()
@@ -154,19 +183,19 @@ class RPIApp:
 
     @property
     def app_name(self):
-        """Return the application name."""
+        """str: The application name (read-only)."""
         return self._app_name
 
     def start(self):
-        """
-        Start the application lifecycle with global safe-shutdown handling.
+        """Run the application: ``setup()``, then ``run()``, then ``stop()``.
 
-        This wrapper ensures:
-        - setup() is always called before run()
-        - Any exception inside run() is caught
-        - KeyboardInterrupt (Thonny Stop) triggers a clean shutdown
-        - stop() is always executed exactly once
-        - Logs are flushed before exit
+        ``stop()`` is called on normal return from ``run()``, on
+        ``KeyboardInterrupt`` (Ctrl-C or Thonny Stop), and on any other
+        exception, which is then re-raised so the traceback is visible.
+
+        Raises:
+            Exception: Any exception from ``setup()`` or ``run()`` other than
+                ``KeyboardInterrupt``, after ``stop()`` has run.
         """
         self.running = True
         self.log(f"{self.app_name} starting")
@@ -192,18 +221,24 @@ class RPIApp:
             self.log(f"{self.app_name} stopped")
 
     def setup(self):
-        """Override in subclass. Called once before run()."""
+        """Prepare the application; override in a subclass.
+
+        Called once before :meth:`run`. Create device managers here.
+        """
         pass
 
     def run(self):
-        """Override in subclass. Main application loop."""
+        """Main application code; override in a subclass.
+
+        Loop while ``self.running`` is True. Returning ends the application.
+        """
         pass
 
     def stop(self):
-        """
-        Stop the application.
-        Sets running=False and logs the stop.
-        Subclasses should override for hardware cleanup, but must call super().
+        """Stop the application and close the log file.
+
+        Sets ``running`` to False. Subclasses that override this for hardware
+        cleanup must call ``super().stop()`` last.
         """
         self.running = False
         self.log(f"{self.app_name} stopped")
