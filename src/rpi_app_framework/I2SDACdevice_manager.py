@@ -10,7 +10,7 @@ try:
 except ImportError:
     MICROPYTHON = False
 
-from rpi_app_framework import DeviceManager
+from .device_manager import DeviceManager
 
 if not MICROPYTHON:
     import alsaaudio

@@ -21,7 +21,7 @@ direction that the code does not yet follow; see `ROADMAP.md` for progress and
 │   BLEManager · MicrodotManager · I2SDACDeviceManager      │
 │   SoundStream · SoundMixer · CameraDeviceManager · ...    │
 ├───────────────────────────────────────────────────────────┤
-│  _platform.py (Target)  one place that answers            │
+│  _platform.py           one place that answers            │
 │   "MicroPython or CPython?" and "which Pi?"               │
 ├───────────────────────────────────────────────────────────┤
 │  Platform libraries                                       │
@@ -66,7 +66,6 @@ uses a random hex id and lines use `TICKS-<ms>`.
 - The `finally` in `start()` logs after the log file is closed.
 - Device cleanup is entirely manual — each app must remember to turn off motors,
   close valves, release I2C, etc.
-- `rpi_app.py` imports `RPi.GPIO` at module level on Linux though it never uses it.
 
 ### Target contract (v0.2.0)
 
@@ -126,28 +125,39 @@ released, servers stopped.
 
 ## 4. Platform layer
 
-### Current state
+### Before v0.2.0
 
-Each module detects the platform itself, in four different ways:
+Each module detected the platform itself, in four different ways:
 
 - `try: from machine import Pin` / `except ImportError` (most modules)
 - `sys.implementation.name == "micropython"` (`ble_manager.py`)
 - `import network` (`wifi_manager.py`)
 - Pi model from `/proc/device-tree/model` (`pi_hardware_adapter.py`)
 
-Several modules import Linux-only libraries at module level (`RPi.GPIO`, `gpiozero`,
-`picamera2`, `alsaaudio`, `cv2`), so `import rpi_app_framework.<module>` fails on a
+Several modules imported Linux-only libraries at module level (`RPi.GPIO`, `gpiozero`,
+`picamera2`, `alsaaudio`, `cv2`), so `import rpi_app_framework.<module>` failed on a
 PC, in CI, or on a Pi without that library.
 
-### Target (`_platform.py`)
+### `_platform.py` (done in v0.2.0 Step 2)
 
 ```python
 IS_MICROPYTHON: bool          # sys.implementation.name == "micropython"
-IS_LINUX: bool
-BOARD: str                    # "pico", "pico_w", "pico2_w", "pi_zero", "pi4", "pi5", "unknown"
-def board_model() -> str      # human-readable, cached
-def require(module_name, extra) # import or raise ImportError naming the pip extra
+IS_LINUX: bool                # CPython on any Linux
+BOARD: str                    # "pico", "pico_w", "pico2", "pico2_w", "pi1".."pi5",
+                              # "pi400", "pi500", "pi_zero", "pi_zero_w", "pi_zero2_w",
+                              # "cm1", "cm3", "cm4", "cm5", "unknown"
+def board_model() -> str                    # os.uname().machine on Pico,
+                                            # /proc/device-tree/model on Linux; cached
+def require(module_name, extra=None, feature=None)  # import or raise ImportError
+                                            # naming the pip extra; returns the module
+def ticks_ms() -> int; def ticks_diff(new, old) -> int   # elapsed ms on both
 ```
+
+Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
+`motor_driver_tb6612`, `pi_hardware_adapter`. The remaining device modules still use
+their own detection and some top-level optional imports (`joystick_xy_manager`,
+`positional_servo_manager`, `I2SDACdevice_manager`, `cameradevicemanager`,
+`motion_detector`, `linux_ble_gatt`); they move to `_platform` in Step 5.
 
 - Detection happens once; modules import the constants.
 - `require("picamera2", extra="camera")` gives the user
@@ -162,7 +172,7 @@ def require(module_name, extra) # import or raise ImportError naming the pip ext
 Current `__init__.py` eagerly imports nine modules. On a Pico this loads WiFi, Microdot,
 motor, power, and ADC code into RAM even for a blink app.
 
-**Target:** `__init__.py` imports only `RPIApp`, `DeviceManager`, and `__version__`.
+**Done (Step 2):** `__init__.py` imports only `RPIApp`, `DeviceManager`, and `__version__`.
 Device managers are imported from their modules:
 
 ```python
@@ -195,7 +205,7 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | Module | Class | Pico | Linux | Base class | Notes |
 |---|---|---|---|---|---|
 | `rpi_app.py` | `RPIApp` | ✓ | ✓ | — | core |
-| `device_manager.py` | `DeviceManager` | ✓ | ✓ | — | core; unneeded top-level GPIO imports |
+| `device_manager.py` | `DeviceManager` | ✓ | ✓ | — | core |
 | `led_simple.py` | `LEDSimple` | ✓ | ✓ | DM | `pin` is first arg |
 | `motor_driver_tb6612.py` | `MotorDriverTB6612FNG` | ✓ | ✓ | DM | `stop(motor)` shadows lifecycle meaning |
 | `positional_servo_manager.py` | `PositionalServoManager` | ✓ | ✓ | DM | GPIO PWM or PCA9685 |
@@ -208,8 +218,8 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `ble_manager.py` + `linux_ble_gatt.py` | `BLEManager` | ✓ | ✓ | DM | BlueZ via dbus on Linux |
 | `microdot_manager.py` | `MicrodotManager` | ✓ | ✓ | DM | old copy removed |
 | `I2SDACdevice_manager.py` | `I2SDACDeviceManager` | ✓ | ✓ | DM | MAX98357; alsaaudio top-level import |
-| `sound_stream.py` | `SoundStream` | ? | ✓ | DM | **broken import** (`devicemanager`) |
-| `sound_mixer.py` | `SoundMixer` | ? | ✓ | DM | **broken import** (`devicemanager`) |
+| `sound_stream.py` | `SoundStream` | ? | ✓ | DM | uses `wave` (not on MicroPython) |
+| `sound_mixer.py` | `SoundMixer` | ? | ✓ | DM | |
 | `cameradevicemanager.py` | `CameraDeviceManager` | ✗ | ✓ | none | picamera2; hardcoded `/home/pi` paths |
 | `MJPEGRequestHandler.py` | `MJPEGStreamingManager` | ✗ | ✓ | DM | |
 | `motion_detector.py` | `MotionDetector` | ✗ | ✓ | none | OpenCV; not a device — candidate for a `vision` subpackage |

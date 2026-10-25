@@ -73,8 +73,8 @@ numeric argument. Say which platforms behave differently.
    (`from .device_manager import DeviceManager`).
    *`re` is limited on MicroPython; avoid it in Pico code paths.
 2. **Platform detection comes from `_platform.py`** (`IS_MICROPYTHON`, `BOARD`).
-   Do not write new `try: import machine` blocks. *(Until `_platform.py` lands in
-   v0.2.0, follow the existing pattern.)*
+   Do not write new `try: import machine` blocks. Inside an `if IS_MICROPYTHON:`
+   branch, import `machine` directly (it always exists on the Pico).
 3. **Optional and Linux-only libraries are imported lazily**, inside the method or
    constructor that needs them, via `_platform.require(...)`, which names the pip extra
    in the error.
@@ -98,8 +98,8 @@ Memory:
 - No heavy work at import time.
 - Keep each Pico-capable module small; split Linux-only helpers into a separate module
   (pattern: `ble_manager.py` + `linux_ble_gatt.py`).
-- Use `time.ticks_ms()`/`ticks_diff()` on Pico and `time.monotonic()` on Linux, via a
-  `_platform` helper, for elapsed time.
+- For elapsed time use `_platform.ticks_ms()` and `_platform.ticks_diff(new, old)`
+  (MicroPython ticks on the Pico, `time.monotonic()` on Linux).
 
 ## 4. Naming
 

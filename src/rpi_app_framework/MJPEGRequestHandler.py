@@ -2,7 +2,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from rpi_app_framework.device_manager import DeviceManager
+from .device_manager import DeviceManager
 
 
 class _MJPEGRequestHandler(BaseHTTPRequestHandler):

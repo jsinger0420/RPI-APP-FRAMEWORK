@@ -29,8 +29,14 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+# GPIO on Raspberry Pi OS (all models incl. Pi 5). gpiozero picks the lgpio
+# backend on the Pi 5; Raspberry Pi OS ships lgpio as python3-lgpio.
+gpio = [
+    "gpiozero>=2.0"
+]
+# Deprecated alias for "gpio" (was RPi.GPIO before 0.2.0); remove in 0.3.0.
 pi = [
-    "RPi.GPIO>=0.7.0"
+    "gpiozero>=2.0"
 ]
 test = [
     "pytest>=7.0",

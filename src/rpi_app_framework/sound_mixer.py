@@ -5,7 +5,7 @@
 # ============================================================
 
 import array
-from devicemanager import DeviceManager
+from .device_manager import DeviceManager
 
 
 class SoundMixer(DeviceManager):

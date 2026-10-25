@@ -8,8 +8,6 @@ All notable changes to this project are documented here. Format based on
 
 ### Added
 - Sound: `I2SDACDeviceManager` (MAX98357 I2S DAC), `SoundStream`, `SoundMixer`.
-  Note: `SoundStream`/`SoundMixer` have a broken import and do not load yet
-  (fix planned in v0.2.0 Step 2).
 - Camera and vision (Linux only): `CameraDeviceManager` (picamera2),
   `MJPEGStreamingManager`, `MotionDetector` (OpenCV).
 - Design docs for contributors: `CLAUDE.md`, `docs/ARCHITECTURE.md`,
@@ -17,6 +15,35 @@ All notable changes to this project are documented here. Format based on
   `docs/devices/` templates.
 - `.gitattributes` normalizing line endings to LF.
 - This changelog, with history for 0.1.1-0.1.5 reconstructed from git.
+- `rpi_app_framework._platform`: the single place for platform and board detection
+  (`IS_MICROPYTHON`, `IS_LINUX`, `BOARD`, `board_model()`), lazy optional imports
+  with a helpful error (`require()`), and `ticks_ms()`/`ticks_diff()` (ADR-003).
+- `gpio` extra: `pip install rpi-app-framework[gpio]` installs gpiozero.
+- `PiHardwareAdapter.board`: short board id such as `"pico2_w"` or `"pi5"`.
+
+### Changed
+- **BREAKING:** GPIO on Raspberry Pi OS now uses gpiozero instead of `RPi.GPIO` in
+  `LEDSimple`, `SolenoidValve`, `MotorDriverTB6612FNG` and `PiHardwareAdapter`, so
+  they work on the Pi 5 (ADR-003). Pin numbers are still BCM. Migration: install
+  gpiozero (`pip install rpi-app-framework[gpio]`; preinstalled on Raspberry Pi OS).
+  The `pi` extra now installs gpiozero and is a deprecated alias of `gpio`.
+- **BREAKING:** `import rpi_app_framework` loads only `RPIApp` and `DeviceManager`.
+  On CPython, `from rpi_app_framework import LEDSimple` still works (imported on
+  first use). On a Pico, import from the module:
+  `from rpi_app_framework.led_simple import LEDSimple`. `from rpi_app_framework
+  import *` now exports only `RPIApp`, `DeviceManager` and `__version__`.
+- **BREAKING:** `SolenoidValve.cleanup()` and `PiHardwareAdapter.cleanup()` release
+  only their own pins instead of calling `RPi.GPIO.cleanup()` for the whole process.
+- **BREAKING:** `MotorDriverTB6612FNG` pin validation on Raspberry Pi OS accepts BCM
+  0-27 (was 1-40, which mixed up physical and BCM numbering).
+- `PiHardwareAdapter.model` on the Pico reports the firmware's board string (e.g.
+  "Raspberry Pi Pico W with RP2040") instead of always "Raspberry Pi Pico 2 W".
+- `__version__` is read from the installed package metadata (was a stale "0.1.2").
+
+### Removed
+- **BREAKING:** module-level `MICROPYTHON` flags in `rpi_app`, `device_manager`,
+  `led_simple`, `solenoid_valve`, `motor_driver_tb6612` and `pi_hardware_adapter`.
+  Use `from rpi_app_framework._platform import IS_MICROPYTHON`.
 
 ### Removed
 - `setup.py`. It was stale (version 0.1.0, placeholder author and URL) and is not
@@ -30,6 +57,19 @@ All notable changes to this project are documented here. Format based on
 ### Fixed
 - `src/rpi_app_framework.egg-info/` is no longer tracked in git (it is a build
   artifact and was already listed in `.gitignore`).
+- `import rpi_app_framework` no longer requires `RPi.GPIO`/gpiozero, so it works on
+  a PC and in CI.
+- `SoundStream` and `SoundMixer` import again (`devicemanager` -> `.device_manager`).
+- Absolute self-imports in `I2SDACdevice_manager`, `MJPEGRequestHandler` and
+  `wifi_manager` are now relative.
+- `MotorDriverTB6612FNG` on Raspberry Pi OS: crashed at init (direction and standby
+  pins were created as `RPi.GPIO.PWM` objects).
+- `MotorDriverTB6612FNG.increase_speed()`/`decrease_speed()` on a reversing motor
+  called a non-existent `backward()` method.
+- `SolenoidValve(active_high=False)` started with the valve open.
+- `PiHardwareAdapter.digital_in(pull=...)` on the Pico passed the pull setting as
+  part of the mode, so the pull resistor was not enabled.
+- `DeviceManager` name validation no longer imports `re` (limited on MicroPython).
 
 ## [0.1.5] - 2026-06-27
 
