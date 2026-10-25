@@ -19,8 +19,8 @@ conversation.
       `microdot_manager_old.py`.
 - ☑ Add `CHANGELOG.md` with history for 0.1.1–0.1.5 reconstructed from git
       (0.1.2 was never tagged; it is commit `5e642e9`).
-- ◐ Move `.pypirc` out of the repo folder (local action, not a commit). It was
-      never committed and is in `.gitignore`, but the folder syncs to OneDrive.
+- ☑ Move `.pypirc` out of the repo folder. Now at `C:\Users\Jsing\.pypirc`; the
+      repo itself moved out of OneDrive to `C:\Users\Jsing\dev\RPI-APP-FRAMEWORK`.
 
 ### Step 2 — Platform layer · `feature/platform-layer`
 - ☐ Mark ADR-003 Accepted after review.
