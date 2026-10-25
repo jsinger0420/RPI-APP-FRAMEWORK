@@ -203,10 +203,10 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | partial | DM | Linux needs external ADC |
 | `ads1x15.py` | `ADS1x15` | ? | ✓ | DM | smbus2 on Linux |
 | `power_monitor.py` | `PowerMonitor` | ✓ | ✓ | DM | uses ADS1x15 on Linux |
-| `pi_hardware_adapter.py` | `PiHardwareAdapter` | ✓ | ✓ | DM | `hardware.py` is a duplicate |
+| `pi_hardware_adapter.py` | `PiHardwareAdapter` | ✓ | ✓ | DM | duplicate `hardware.py` removed |
 | `wifi_manager.py` | `WiFiManager` | ✓ | ✓ | DM | `network` / `nmcli`; reads `wifi_config.json` |
 | `ble_manager.py` + `linux_ble_gatt.py` | `BLEManager` | ✓ | ✓ | DM | BlueZ via dbus on Linux |
-| `microdot_manager.py` | `MicrodotManager` | ✓ | ✓ | DM | `_old` copy to delete |
+| `microdot_manager.py` | `MicrodotManager` | ✓ | ✓ | DM | old copy removed |
 | `I2SDACdevice_manager.py` | `I2SDACDeviceManager` | ✓ | ✓ | DM | MAX98357; alsaaudio top-level import |
 | `sound_stream.py` | `SoundStream` | ? | ✓ | DM | **broken import** (`devicemanager`) |
 | `sound_mixer.py` | `SoundMixer` | ? | ✓ | DM | **broken import** (`devicemanager`) |
