@@ -43,6 +43,8 @@ examples/                  runnable example apps
 docs/ARCHITECTURE.md       layers, lifecycle contract, DeviceManager contract, platform layer
 docs/CONVENTIONS.md        code style, docstrings, imports, naming, MicroPython rules
 docs/ROADMAP.md            current release plan and backlog
+docs/RELEASING.md          how to cut a release (tag -> GitHub Actions -> PyPI)
+.github/workflows/         ci.yml (lint, test, build), publish.yml (PyPI on tag)
 docs/decisions/            ADRs: one short file per architectural decision
 docs/devices/<module>.md   per-device spec: hardware, wiring, API, platform support, status
 docs/devices/_TEMPLATE.md  copy this to start a new device doc
@@ -59,8 +61,11 @@ Check `docs/ROADMAP.md` for what is actually done.
 2. **Branch:** one git branch per unit of work, named `feature/<topic>` or `fix/<topic>`.
 3. **Work:** keep changes inside the agreed scope. If the change alters a base class,
    the platform layer, or a cross-cutting rule, stop and write an ADR first.
-4. **Test:** `pytest` on a PC (stubs cover `machine`, `gpiozero`, etc.). Note what was
-   or was not tested on real hardware in the PR.
+4. **Test:** `pytest` on a PC (stubs in `tests/stubs/` cover `machine`, `network`,
+   `gpiozero`, `smbus2`). It runs on simulated Raspberry Pi OS and, in a subprocess,
+   on a simulated Pico (`pytest --platform=micropython` runs that alone). Lint with
+   `ruff check .` and `black --check .`; CI runs all of these on every PR. Note what
+   was or was not tested on real hardware in the PR.
 5. **Finish:** update the device doc, `CHANGELOG.md` (Unreleased section), `ROADMAP.md`
    status, and add an ADR if a design decision was made. These updates are what let the
    next conversation pick up the context.
@@ -69,7 +74,9 @@ Check `docs/ROADMAP.md` for what is actually done.
 
 - Local repo: `C:\Users\Jsing\dev\RPI-APP-FRAMEWORK` (outside OneDrive; GitHub is the backup,
   so push branches at the end of each session).
-- PyPI credentials: `C:\Users\Jsing\.pypirc` (never inside the repo).
+- PyPI: releases are published by GitHub Actions on a `v*` tag (Trusted Publishing,
+  `docs/RELEASING.md`). `C:\Users\Jsing\.pypirc` is only a manual fallback (never
+  inside the repo).
 - GitHub: https://github.com/jsinger0420/RPI-APP-FRAMEWORK (default branch `main`, PRs from feature branches)
 - PyPI: https://pypi.org/project/rpi-app-framework/
 - Owner develops in Thonny on Windows; Pico code is deployed by copying

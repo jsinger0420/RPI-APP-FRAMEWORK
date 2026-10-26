@@ -1,0 +1,66 @@
+# Lint, test and build on every push and pull request.
+# Also called by publish.yml so a release is only built from a green commit.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: ruff + black
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      # Same pinned versions as the "dev" extra in pyproject.toml.
+      - run: python -m pip install "ruff==0.16.9" "black==26.5.1"
+      - run: ruff check --output-format=github .
+      - run: black --check --diff .
+
+  test:
+    name: pytest (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        include:
+          # The owner develops on Windows.
+          - os: windows-latest
+            python-version: "3.13"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e ".[test]"
+      # Simulated Raspberry Pi OS; also re-runs the suite on a simulated
+      # Pico 2 W (tests/test_simulated_micropython.py) and import-smoke tests
+      # every module in a clean interpreter.
+      - run: python -m pytest -ra --cov=rpi_app_framework --cov-report=term
+
+  build:
+    name: build + twine check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: python -m twine check --strict dist/*

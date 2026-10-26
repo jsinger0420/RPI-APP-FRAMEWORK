@@ -144,8 +144,14 @@ Memory:
 
 ## 7. Formatting and tooling
 
-- `black` (line length 88), `isort` (profile black), `ruff` for linting.
-- Use `pydocstyle` rules via ruff with `convention = "google"` to enforce docstrings.
+- `black` (line length 88) for formatting and `ruff` for linting and import order
+  (replaces isort/flake8). Both are configured in `pyproject.toml`, pinned in the
+  `dev` extra, and checked in CI: `pip install -e .[dev]`, then
+  `ruff check --fix .` and `black .` before committing.
+- Ruff enforces Google docstrings (`D`, `convention = "google"`). Modules not yet
+  converted to the 0.2.0 contract have `per-file-ignores`; delete a module's entry
+  when it is converted.
+- No `UP` (pyupgrade) rules: their rewrites can produce syntax MicroPython lacks.
 - Files are UTF-8, LF line endings (`.gitattributes`).
 - Avoid non-ASCII characters in log messages (some Pico serial consoles mangle them).
 

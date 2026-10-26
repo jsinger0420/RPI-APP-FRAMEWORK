@@ -203,7 +203,9 @@ their own detection and some top-level optional imports (`joystick_xy_manager`,
 - GPIO on Linux goes through **gpiozero**, which selects `lgpio` on Pi 5 and works on
   all earlier models. `RPi.GPIO` is dropped because it does not support the Pi 5.
   See ADR-003.
-- Tests swap in stub modules for `machine`, `gpiozero`, `smbus2`, etc.
+- Tests swap in stub modules for `machine`, `network`, `gpiozero` and `smbus2`
+  (`tests/stubs/`). `stubs.simulate` makes the test process look like Raspberry Pi OS
+  or a Pico 2 W before the package is imported; see `tests/conftest.py`.
 
 ## 5. Package layout and import cost
 

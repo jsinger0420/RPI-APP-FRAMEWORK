@@ -105,5 +105,3 @@ convention = "google"
 "src/rpi_app_framework/wifi_manager.py" = ["D", "B904", "E722", "F401", "F541"]
 # Examples are rewritten in Step 6.
 "examples/*" = ["D"]
-# Test stubs mirror third-party APIs (names, signatures, unused arguments).
-"tests/stubs/*" = ["D102", "D105", "D107"]

@@ -31,6 +31,13 @@ All notable changes to this project are documented here. Format based on
 - `RPIApp(log_dir=...)` and the `Logger` class (`rpi_app_framework.logger`), now
   behind `RPIApp.log()` and available as `app.logger`.
 - First unit tests (`tests/`), run with `pytest`.
+- Test harness (for contributors): fake `machine`, `network`, `gpiozero` and `smbus2`
+  in `tests/stubs/`, and a simulated Pico 2 W (`pytest --platform=micropython`). A
+  plain `pytest` runs the suite on both simulated platforms and import-smoke tests
+  every module in a clean interpreter.
+- GitHub Actions: CI (ruff, black, pytest on Python 3.9-3.13 and Windows, build +
+  `twine check`) on every push and PR; publishing to PyPI on a `v*` tag via Trusted
+  Publishing (`docs/RELEASING.md`).
 
 ### Changed
 - **BREAKING:** GPIO on Raspberry Pi OS now uses gpiozero instead of `RPi.GPIO` in
