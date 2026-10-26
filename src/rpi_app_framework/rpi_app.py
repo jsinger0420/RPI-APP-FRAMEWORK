@@ -13,8 +13,7 @@ Typical usage:
 
     class Blink(RPIApp):
         def setup(self):
-            # LEDSimple gets app= in v0.2.0 Step 5; until then register it:
-            self.led = self.add_device(LEDSimple(pin="LED", log_func=self.log))
+            self.led = LEDSimple("status", pin="LED", app=self)
 
         def loop(self):
             self.led.toggle()
