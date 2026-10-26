@@ -67,6 +67,11 @@ All notable changes to this project are documented here. Format based on
   `docs/devices/power_monitor.md`.
 - Private `_i2c.I2CDevice` shared by I2C device managers (ADR-008), and
   `_platform.analog_input()` (ADR-007), for contributors.
+- `PiHardwareAdapter` follows the device contract (ADR-004): `app=`, `close()` turns
+  off and releases every pin it created. Its pin factory returns the same objects on
+  both platforms: `DigitalOutput` (`on`/`off`/`toggle`/`value`, `active_high`),
+  `DigitalInput` (`value` = raw level) and `PWMOutput` (`duty` in percent); new
+  `pins`. Device doc: `docs/devices/pi_hardware_adapter.md`.
 - `JoystickXYManager` follows the device contract (ADR-004) and works on Raspberry Pi
   OS with an external ADC: each axis is an analog input (ADR-007), a Pico ADC pin or
   any object with `read_u16()`. New `read()`, `center`, `invert_x`/`invert_y`, and
@@ -196,9 +201,21 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `PowerMonitor.battery_voltage`/`battery_level` raise `OSError` when the
   ADC read fails (`report()` still logs it), and `PowerMonitor.close()` no longer
   closes the ADC (create the ADC with `app=self`).
+- `PiHardwareAdapter` pins are released on stop on the Pico too (outputs driven off,
+  PWM de-initialized); before, `cleanup()` did nothing there.
 - `PowerMonitor` reads the Pico W / Pico 2 W USB sense from `WL_GPIO2` (GP24 is not
   VBUS on those boards), and no longer needs `re` or the walrus operator (both
   awkward on MicroPython).
+- **BREAKING:** `PiHardwareAdapter.digital_out()` returns a `DigitalOutput` on both
+  platforms (was a `machine.Pin` on the Pico and a setter function on Linux): use
+  `out.on()`/`out.off()` or `out.value = 1`. It starts off (`value=0`) on the Pico too
+  (was "unchanged").
+- **BREAKING:** `PiHardwareAdapter.digital_in()` returns a `DigitalInput` (was a
+  `machine.Pin` or a getter function): read `inp.value` (raw level) instead of
+  calling it.
+- **BREAKING:** `PiHardwareAdapter.pwm()` returns a `PWMOutput` (was `machine.PWM` or
+  `gpiozero.PWMOutputDevice`): set `pwm.duty` in percent. Pins, `pull`, `freq` and
+  `duty` are validated.
 - `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
   a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a
@@ -207,6 +224,8 @@ All notable changes to this project are documented here. Format based on
 ### Removed
 - **BREAKING:** `JoystickXYManager.log_position()` (it never returned). Log `read()`
   from `loop()` instead.
+- **BREAKING:** `PiHardwareAdapter.cleanup()` (use `close()`, or create it with
+  `app=self`) and `PiHardwareAdapter.led()` (use `LEDSimple`, or `digital_out()`).
 - **BREAKING:** `PositionalServoManager.cleanup()` (use `close()`), the unused
   `neutral_us` and `idle_timeout_sec` arguments, the `smooth_speed_deg_per_sec`
   argument (now `speed_dps`), and the `i2c` argument (use `pca=`). The

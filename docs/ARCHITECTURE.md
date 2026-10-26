@@ -74,8 +74,6 @@ class MyApp(RPIApp):
     def setup(self):                       # create devices with app=self
         self.pump = Pump("pump", pin=15, app=self)
         # any object with a close() that makes it safe (e.g. CameraDeviceManager).
-        # NOT PiHardwareAdapter yet: it has
-        # cleanup(), not close(), until Step 5 - call its cleanup() in teardown().
         self.cam = self.add_device(CameraDeviceManager("cam"))
     def loop(self):                        # one tick; return False to end
         ...
@@ -273,7 +271,7 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); axes are analog inputs (ADR-007), external ADC on Linux; `docs/devices/joystick_xy_manager.md` |
 | `ads1x15.py` | `ADS1x15` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `_i2c` (ADR-008); `channel(n)` analog inputs (ADR-007); `docs/devices/ads1x15.md` |
 | `power_monitor.py` | `PowerMonitor` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); battery is an analog input; `docs/devices/power_monitor.md` |
-| `pi_hardware_adapter.py` | `PiHardwareAdapter` | ✓ | ✓ | DM | duplicate `hardware.py` removed |
+| `pi_hardware_adapter.py` | `PiHardwareAdapter` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); owns `DigitalOutput`/`DigitalInput`/`PWMOutput` pins; `docs/devices/pi_hardware_adapter.md` |
 | `wifi_manager.py` | `WiFiManager` | ✓ | ✓ | DM | `network` / `nmcli`; reads `wifi_config.json` |
 | `ble_manager.py` + `linux_ble_gatt.py` | `BLEManager` | ✓ | ✓ | DM | BlueZ via dbus on Linux |
 | `microdot_manager.py` | `MicrodotManager` | ✓ | ✓ | DM | old copy removed |

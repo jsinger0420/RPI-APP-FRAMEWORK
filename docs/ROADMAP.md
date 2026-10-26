@@ -60,7 +60,7 @@ conversation.
       "stopped").
 - Carried to Step 5: `PiHardwareAdapter` still has `cleanup()` not `close()`, so
   registering it does **not** make it safe on stop (call `cleanup()` in
-  `teardown()` until converted). `PositionalServoManager` — done in Step 5.
+  `teardown()` until converted) — done in Step 5. `PositionalServoManager` — done in Step 5.
   `I2SDACDeviceManager.deinitialize()` → `close()`. `SolenoidValve`: `cleanup()` →
   `close()` and `is_open` → `valve_open` — done in Step 5. `LEDSimple` has no
   `close()` (LED left as is) — done in Step 5. Update `examples/main.py` to
@@ -120,7 +120,9 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       helper `_i2c.I2CDevice` (ADR-008, also used by `PCA9685`); `ADS1x15` works on the
       Pico and gives `channel(n)` analog inputs; `PowerMonitor` battery is an analog
       input (ADR-007 amended: optional `read_voltage()`, `_platform.analog_input()`).
-- ☐ `PiHardwareAdapter`
+- ◐ `PiHardwareAdapter` · `feature/pi-hardware-adapter` — `tests/test_pi_hardware_adapter.py`,
+      `docs/devices/pi_hardware_adapter.md`. `cleanup()` → `close()`; pin factory returns
+      the same `DigitalOutput`/`DigitalInput`/`PWMOutput` objects on both platforms.
 - ☐ `WiFiManager`
 - ☐ `MicrodotManager`
 - ☐ `BLEManager` + `linux_ble_gatt`

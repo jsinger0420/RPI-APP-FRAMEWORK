@@ -24,6 +24,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 5 | `feature/positional-servo` | `feature/gpio-pin-check` | ☐ | ☐ |
 | 6 | `feature/joystick-xy` | `feature/positional-servo` | ☐ | ☐ |
 | 7 | `feature/ads1x15-power-monitor` | `feature/joystick-xy` | ☐ | ☐ |
+| 8 | `feature/pi-hardware-adapter` | `feature/ads1x15-power-monitor` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -33,6 +34,7 @@ git push -u origin feature/gpio-pin-check
 git push -u origin feature/positional-servo
 git push -u origin feature/joystick-xy
 git push -u origin feature/ads1x15-power-monitor
+git push -u origin feature/pi-hardware-adapter
 ```
 
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
@@ -300,3 +302,18 @@ AdcTest(app_name="AdcTest", loop_interval=1.0).start()
 - ☐ Pi 4 / Pi 5: `report()` shows the core voltage and "throttle OK" on a good supply;
   with a weak supply, `undervoltage_now`. Pi 5: does `current ...mA` appear?
 - ☐ Pi: run twice in a row (owned I2C bus closed and reopened).
+
+## 9. PiHardwareAdapter — `feature/pi-hardware-adapter`
+
+Wiring: push button from GP16 / BCM 16 to GND; LED + 330 ohm on GP17 / BCM 17 (stands
+in for a buzzer); LED + 330 ohm on GP18 / BCM 18 for PWM. Program: the `Doorbell`
+example in `docs/devices/pi_hardware_adapter.md`, plus in `setup()`:
+`self.glow = self.hw.pwm(18, duty=10)` and in `loop()` nothing else.
+
+- ☐ Pico 2 W and Pi 4 / Pi 5: the log's first lines show the board model and a
+  plausible CPU temperature (Pico: room temperature +- 5 C; Pi: 35-70 C).
+- ☐ Pressing the button lights the GP17/BCM 17 LED; releasing turns it off.
+- ☐ The GP18/BCM 18 LED glows dimly (10 %); from the REPL/`setup()`, `duty=100` is full.
+- ☐ Stop / Ctrl-C while the button is held → both LEDs go off; log ends with
+  `[hw] closed` then "stopped".
+- ☐ Pi: run twice in a row (pins released, no "pin in use").
