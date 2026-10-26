@@ -1,31 +1,44 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+# 77+: SPDX "license" string and "license-files" (PEP 639).
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "rpi-app-framework"
-version = "0.1.5"
-description = "A Python framework for building applications on all Raspberry Pi versions, including Pico."
+# The version lives in src/rpi_app_framework/_version.py (ADR-012), so the Pico,
+# which has no package metadata, reports the same __version__.
+dynamic = ["version"]
+description = "Application lifecycle and device managers for every Raspberry Pi, from the Pico (MicroPython) to the Pi 5."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     {name = "John Singer", email = "john@singerlinks.com"}
 ]
-keywords = ["raspberry-pi", "pico", "framework", "app-development", "iot"]
+keywords = [
+    "raspberry-pi", "pico", "micropython", "gpio", "gpiozero", "framework",
+    "lifecycle", "servo", "motor", "sensor", "iot",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Intended Audience :: Education",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: MicroPython",
+    "Topic :: Software Development :: Embedded Systems",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
-    "Topic :: System :: Hardware"
+    "Topic :: System :: Hardware",
 ]
+# The core (RPIApp, DeviceManager) needs nothing; each feature has an extra.
 dependencies = []
 
 [project.optional-dependencies]
@@ -41,11 +54,16 @@ i2c = [
 # Audio on Raspberry Pi OS (I2SDACDeviceManager through ALSA). Building it needs the
 # Debian packages python3-dev and libasound2-dev.
 audio = [
-    "pyalsaaudio>=0.9"
+    "pyalsaaudio>=0.9; sys_platform == 'linux'"
 ]
 # Web server on Raspberry Pi OS (MicrodotManager). On the Pico, copy Microdot to /lib.
 web = [
     "microdot>=2.0"
+]
+# Everything above, for a Raspberry Pi. No camera extra: picamera2 must come from apt
+# (python3-picamera2), because the pip package lacks the libcamera bindings.
+all = [
+    "rpi-app-framework[gpio,i2c,audio,web]"
 ]
 # Deprecated alias for "gpio" (was RPi.GPIO before 0.2.0); remove in 0.3.0.
 pi = [
@@ -64,17 +82,21 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/jsinger0420/rpi-app-framework"
-Repository = "https://github.com/jsinger0420/rpi-app-framework.git"
-Documentation = "https://github.com/jsinger0420/rpi-app-framework/wiki"
-"Bug Tracker" = "https://github.com/jsinger0420/rpi-app-framework/issues"
+Homepage = "https://github.com/jsinger0420/RPI-APP-FRAMEWORK"
+Documentation = "https://github.com/jsinger0420/RPI-APP-FRAMEWORK/tree/main/docs"
+Repository = "https://github.com/jsinger0420/RPI-APP-FRAMEWORK"
+Issues = "https://github.com/jsinger0420/RPI-APP-FRAMEWORK/issues"
+Changelog = "https://github.com/jsinger0420/RPI-APP-FRAMEWORK/blob/main/CHANGELOG.md"
+Blog = "https://singerlinks.com/category/python/rpi-app-framework/"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = {find = {where = ["src"]}}
 
-[tool.setuptools.package-data]
-"rpi_app_framework" = ["*.txt", "*.md"]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "rpi_app_framework._version.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -100,8 +122,3 @@ ignore = ["E501", "D403"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
-
-[tool.ruff.lint.per-file-ignores]
-# Every package module follows the docstring rules since Step 5.
-# Examples are rewritten in Step 6.
-"examples/*" = ["D"]

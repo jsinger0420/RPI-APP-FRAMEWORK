@@ -31,6 +31,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 12 | `chore/remove-motion-detector` | `feature/ble-manager` | ☐ | ☐ |
 | 13 | `feature/audio` | `chore/remove-motion-detector` | ☐ | ☐ |
 | 14 | `feature/camera` | `feature/audio` | ☐ | ☐ |
+| 15 | `chore/packaging` | `feature/camera` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -418,3 +419,26 @@ Setup: `docs/devices/camera.md` (`sudo apt install python3-picamera2 ffmpeg`; ve
 - ☐ Ctrl-C while recording and streaming → log closes `stream` then `cam`; the MP4 is
   playable; running again works at once (camera and port released).
 - ☐ No camera connected → clear error at start, app stops cleanly.
+
+## 15. Packaging and examples — `chore/packaging`
+
+`mip` reads `package.json` from GitHub, so it can only be tested after the branch is
+pushed: use the branch name as the version, e.g.
+`mpremote mip install github:jsinger0420/RPI-APP-FRAMEWORK@chore/packaging`.
+
+- ☐ Pico 2 W, empty `/lib`: the `mpremote mip install` above copies
+  `/lib/rpi_app_framework/` (no `camera.py` / `mjpeg_server.py`);
+  `import rpi_app_framework; rpi_app_framework.__version__` prints `0.2.0.dev0`.
+- ☐ Pico 2 W on WiFi: `import mip; mip.install("github:jsinger0420/RPI-APP-FRAMEWORK",
+  version="chore/packaging")` from the REPL does the same.
+- ☐ Pi (any): in a fresh venv, `pip install "dist/rpi_app_framework-*.whl[all]"` from
+  `python -m build` installs gpiozero, smbus2, microdot and pyalsaaudio.
+- ☐ Pico 2 W: `blink.py` and `led_lifecycle_demo.py` as `main.py`; Stop mid-blink →
+  LED off, log ends with "stopped".
+- ☐ Pico 2 W: `board_info.py` (button GP16, buzzer GP17), `web_led.py` (with
+  `wifi_config.json` and Microdot in `/lib`; page toggles the onboard LED),
+  `servo_sweep.py` (PCA9685 on GP0/GP1), `joystick_rover.py` (wheels off the ground;
+  does nothing until the stick is clicked).
+- ☐ Pi 4 / Pi 5: `blink.py` and `led_lifecycle_demo.py` with `LED_PIN = 17`,
+  `board_info.py`, `web_led.py` (page on port 8080), `servo_sweep.py` (I2C bus 1).
+

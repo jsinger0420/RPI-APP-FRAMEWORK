@@ -106,6 +106,18 @@ All notable changes to this project are documented here. Format based on
 - `MotorDriverTB6612FNG` follows the device contract (ADR-004): `app=`, `close()`
   (standby, motors off, pins released) and `with` support. New `brake(motor)` (short
   brake) and `enabled`. Device doc: `docs/devices/motor_driver_tb6612.md`.
+- Install on a Pico with `mip`: `package.json` at the repository root lists every
+  module that runs on MicroPython, so `mpremote mip install
+  github:jsinger0420/RPI-APP-FRAMEWORK@v0.2.0` or `mip.install(...)` on a Pico W puts
+  the framework in `/lib` (ADR-012).
+- `all` extra (`gpio`, `i2c`, `audio`, `web`). The `audio` extra only installs
+  pyalsaaudio on Linux, so `pip install rpi-app-framework[all]` also works on a PC.
+- Examples: `led_lifecycle_demo.py` (the lifecycle demo from the SingerLinks post,
+  updated for 0.2.0), `board_info.py`, `web_led.py`, `servo_sweep.py`,
+  `joystick_rover.py`, and `examples/README.md`. All examples run in the test suite
+  against simulated hardware on both platforms (`tests/test_examples.py`).
+- `rpi_app_framework.__version__` is correct on the Pico too (it was a hand-kept
+  fallback there).
 
 ### Changed
 - **BREAKING:** GPIO on Raspberry Pi OS now uses gpiozero instead of `RPi.GPIO` in
@@ -287,7 +299,15 @@ All notable changes to this project are documented here. Format based on
 - `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
   a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a
-  Pico and a Raspberry Pi.
+  Pico and a Raspberry Pi. It is renamed `examples/blink.py`.
+- **BREAKING:** Python 3.9 or later is required (was 3.7). Python 3.7 and 3.8 are
+  end-of-life and were never tested; Raspberry Pi OS Bullseye ships 3.9.
+- The version lives in `src/rpi_app_framework/_version.py` (ADR-012);
+  `pyproject.toml` reads it at build time.
+- README rewritten: install from PyPI with extras and on the Pico (mip, mpremote,
+  Thonny), the lifecycle, a device table with platform support, and links to the
+  docs. Package metadata: corrected project URLs, Python 3.9-3.13 classifiers,
+  SPDX license with `LICENSE` included in the wheel.
 
 ### Removed
 - `linux_ble_gatt.py`, an unfinished BlueZ backend that never worked (ADR-010).

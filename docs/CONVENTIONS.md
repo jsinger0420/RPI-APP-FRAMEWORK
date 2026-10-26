@@ -153,9 +153,8 @@ Memory:
   (replaces isort/flake8). Both are configured in `pyproject.toml`, pinned in the
   `dev` extra, and checked in CI: `pip install -e .[dev]`, then
   `ruff check --fix .` and `black .` before committing.
-- Ruff enforces Google docstrings (`D`, `convention = "google"`). Modules not yet
-  converted to the 0.2.0 contract have `per-file-ignores`; delete a module's entry
-  when it is converted.
+- Ruff enforces Google docstrings (`D`, `convention = "google"`) on every file,
+  examples and tests included.
 - No `UP` (pyupgrade) rules: their rewrites can produce syntax MicroPython lacks.
 - Files are UTF-8, LF line endings (`.gitattributes`).
 - Avoid non-ASCII characters in log messages (some Pico serial consoles mangle them).
@@ -163,14 +162,15 @@ Memory:
 ## 8. Versioning and releases
 
 - Semantic versioning. Before 1.0, minor bumps (0.2 → 0.3) may break the API.
-- Version lives only in `pyproject.toml`; `__version__` reads it via
-  `importlib.metadata` on CPython and falls back to a constant on MicroPython, updated by
-  the release step.
+- Version lives only in `src/rpi_app_framework/_version.py` (ADR-012); `pyproject.toml`
+  reads it at build time and `__version__` imports it on every platform. Between
+  releases it is a `.devN` pre-release of the next version. `package.json` (for `mip`)
+  repeats it; a test checks they match.
 - Every user-visible change goes in `CHANGELOG.md` under `## [Unreleased]`, in groups:
   Added, Changed, Removed, Fixed. Breaking changes are prefixed **BREAKING:** with the
   migration.
 - Release: merge to `main` → tag `vX.Y.Z` → GitHub Actions builds and publishes to PyPI
-  with Trusted Publishing (target; until then, manual `twine upload`).
+  with Trusted Publishing (`docs/RELEASING.md`).
 
 ## 9. Git
 

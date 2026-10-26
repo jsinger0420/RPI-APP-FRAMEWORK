@@ -16,22 +16,9 @@ Pico code should use the explicit module path.
 
 import sys
 
+from ._version import __version__
 from .device_manager import DeviceManager
 from .rpi_app import RPIApp
-
-_FALLBACK_VERSION = "0.1.5"
-
-try:
-    from importlib.metadata import PackageNotFoundError
-    from importlib.metadata import version as _version
-
-    try:
-        __version__ = _version("rpi-app-framework")
-    except PackageNotFoundError:
-        __version__ = _FALLBACK_VERSION
-except ImportError:
-    # MicroPython, or CPython < 3.8.
-    __version__ = _FALLBACK_VERSION
 
 # Public class name -> module that defines it. Imported lazily by __getattr__.
 _LAZY_EXPORTS = {

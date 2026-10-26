@@ -27,7 +27,9 @@ It must run on **both**:
    module top level. A failed optional import raises a clear error *when the feature is
    used*, not at `import rpi_app_framework`.
 3. **PyPI packaging rules apply.** `pyproject.toml` is the single source of truth for
-   metadata and version. No `setup.py`. Extras declare optional dependencies.
+   metadata; the version lives only in `src/rpi_app_framework/_version.py` (ADR-012).
+   No `setup.py`. Extras declare optional dependencies. A new module that runs on the
+   Pico is added to `package.json` (for `mip`); a test checks it.
 4. **MicroPython constraints apply to shared code.** No `typing`, `abc`, `dataclasses`,
    `enum`, `logging`, `pathlib`, or `subprocess` in code that runs on the Pico. Keep RAM
    use low. See `docs/CONVENTIONS.md` § MicroPython.

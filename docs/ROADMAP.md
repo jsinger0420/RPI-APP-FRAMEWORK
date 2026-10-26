@@ -85,7 +85,7 @@ conversation.
   `subprocess` etc. are not caught; real-firmware testing still needed (Steps 2/3).
 - Carried to Step 5 — import-smoke strict xfails and ruff docstring exemptions: all
   cleared in Step 5 (`KNOWN_FAILURES` is empty; only `examples/*` stays exempt until
-  Step 6).
+  Step 6 — cleared in Step 6).
 
 ### Step 5 — Device managers to the new contract (one conversation per group)
 For each: constructor order (`name` first), `close()`, lazy imports, Google
@@ -145,16 +145,32 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       `chore/remove-motion-detector`. A redesign is in the backlog.
 
 ### Step 6 — Packaging & docs · `chore/packaging`
+Branch starts from `feature/camera` (stacked, see `docs/HARDWARE_TEST_PLAN.md` § 15).
+◐ = done on the branch, waiting for the hardware test / owner.
 - ☐ Before tagging 0.2.0 (owner, one time, `docs/RELEASING.md`): add the trusted
       publisher on PyPI and the `pypi` environment on GitHub. Do not push a `v*` tag
       before this, or the publish job fails at upload. Optional: make the CI checks
       required for `main` in branch protection.
-- ☐ `pyproject.toml`: extras per feature, `requires-python >=3.9`, classifiers to
-      3.13, fix project URLs, single-sourced version.
-- ☐ `package.json` for MicroPython `mip` install.
-- ☐ Rewrite README: install (PyPI + Pico), quick start, device table, links to docs.
-- ☐ Update examples; add `examples/led_lifecycle_demo.py` matching the blog post.
-- ☐ Release 0.2.0; update blog posts for API changes.
+- ◐ `pyproject.toml`: extras per feature plus `all` (pyalsaaudio only on Linux),
+      `requires-python >=3.9`, classifiers 3.9–3.13 + MicroPython, project URLs
+      fixed (exact repo name, docs, changelog, blog), SPDX license with `LICENSE` in
+      the wheel (setuptools ≥ 77). Version single-sourced in `_version.py` (ADR-012),
+      now `0.2.0.dev0`; `publish.yml` checks the tag against it.
+- ◐ `package.json` for MicroPython `mip` install (all modules but `camera`,
+      `mjpeg_server`; `github:` URLs so `version=` picks the tag).
+      `tests/test_packaging.py` keeps it in sync.
+- ◐ README rewritten: install (PyPI + extras, Pico via mip/mpremote/Thonny), quick
+      start, lifecycle, device table, links to docs (absolute, so they work on PyPI).
+- ◐ Examples: `main.py` → `blink.py`; new `led_lifecycle_demo.py` (the post's
+      `LEDLifecycleDemo`, 0.2.0 API), `board_info.py`, `web_led.py`,
+      `servo_sweep.py`, `joystick_rover.py`, `examples/README.md`. All run in
+      `tests/test_examples.py` on both simulated platforms; ruff docstring rules now
+      cover `examples/`.
+- ☐ Release 0.2.0 (after the hardware tests and the owner setup above): set
+      `0.2.0` in `_version.py` and `package.json`, date the changelog, merge, tag.
+- ☐ Update blog posts for API changes (owner). The lifecycle post needs
+      `LEDSimple("status_led", pin="LED", app=self)` instead of `log_func=self.log`,
+      and Pico installs can point to `mip`.
 
 ## Backlog (after 0.2.0)
 
@@ -185,3 +201,4 @@ See `docs/decisions/`.
 | 009 | Web server runs inside the app loop (`poll()`), Microdot 2 | Accepted (on branch) |
 | 010 | BLE is Pico-only in 0.2.0; events are delivered by `poll()` | Accepted (on branch) |
 | 011 | Remove `MotionDetector` from the package | Accepted (on branch) |
+| 012 | Version in `_version.py`; `package.json` for `mip` | Accepted (on branch) |

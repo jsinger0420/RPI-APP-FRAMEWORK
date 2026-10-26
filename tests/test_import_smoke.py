@@ -16,7 +16,6 @@ reminder to delete its entry.
 
 import ast
 import os
-import re
 import subprocess
 import sys
 
@@ -116,12 +115,3 @@ def test_lazy_exports_point_at_defining_module():
                 if isinstance(n, ast.ClassDef)
             }
         assert name in classes, "{} not defined in {}.py".format(name, module)
-
-
-def test_fallback_version_matches_pyproject():
-    """``__init__._FALLBACK_VERSION`` equals the version in pyproject.toml."""
-    with open(os.path.join(REPO_DIR, "pyproject.toml")) as f:
-        pyproject = re.search(r'(?m)^version\s*=\s*"([^"]+)"', f.read()).group(1)
-    with open(os.path.join(PKG_DIR, "__init__.py")) as f:
-        fallback = re.search(r'_FALLBACK_VERSION\s*=\s*"([^"]+)"', f.read()).group(1)
-    assert fallback == pyproject

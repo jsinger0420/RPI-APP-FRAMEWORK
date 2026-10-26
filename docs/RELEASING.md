@@ -24,10 +24,10 @@ identity to PyPI with a short-lived OIDC token, so no API token or `.pypirc` is 
 
 ## Cutting a release
 
-1. On a branch: set `version` in `pyproject.toml` **and** `_FALLBACK_VERSION` in
-   `src/rpi_app_framework/__init__.py` (a test checks they match; Step 6 of the 0.2.0
-   roadmap may single-source this). Move the `## [Unreleased]` entries in
-   `CHANGELOG.md` under `## [X.Y.Z] - YYYY-MM-DD`.
+1. On a branch: set `__version__` in `src/rpi_app_framework/_version.py` **and**
+   `version` in `package.json` to `X.Y.Z` (drop the `.devN` suffix; a test checks they
+   match, ADR-012). Move the `## [Unreleased]` entries in `CHANGELOG.md` under
+   `## [X.Y.Z] - YYYY-MM-DD`.
 2. Merge the PR into `main` with CI green.
 3. Tag the merge commit and push the tag:
 
@@ -38,9 +38,12 @@ identity to PyPI with a short-lived OIDC token, so no API token or `.pypirc` is 
    ```
 
 4. *Actions → Publish to PyPI* runs CI again, checks that the tag equals `v` + the
-   `pyproject.toml` version, builds the sdist and wheel, runs `twine check`, and (after
+   version in `_version.py`, builds the sdist and wheel, runs `twine check`, and (after
    approval, if the environment requires it) uploads to PyPI.
 5. Create a GitHub release from the tag with the changelog section as notes.
+
+6. After the release, set the version to the next `.dev0` (e.g. `0.2.1.dev0`) in
+   both files, so `main` never claims to be a released version.
 
 If the version check fails, delete the tag (`git push --delete origin vX.Y.Z`,
 `git tag -d vX.Y.Z`), fix the version, and tag again. PyPI never accepts the same
