@@ -46,12 +46,24 @@ conversation.
   optional libraries at top level. The Step 4 import-smoke test will flag these.
 
 ### Step 3 — Core lifecycle · `feature/core-lifecycle`
-- ☐ Mark ADR-004 Accepted after review.
-- ☐ `DeviceManager`: add `app=`, `close()`, `is_open`, context manager.
-- ☐ `RPIApp`: idempotent `stop()`, `teardown()` hook, device registry with automatic
-      `close()` in reverse order, extract `Logger`.
-- ☐ Fix double "stopped" log and logging after file close.
-- ☐ Optional `loop()` + `loop_interval` convenience.
+- ☑ Mark ADR-004 Accepted (on the branch; reviewed in the PR).
+- ☑ `DeviceManager`: add `app=`, `close()`, `is_open`, `_require_open()`, context
+      manager. Owner kept in private `_app` (no public `app`: `MicrodotManager` uses it).
+- ☑ `RPIApp`: idempotent `stop()`, `teardown()` hook, device registry
+      (`add_device`/`remove_device`/`devices`) with automatic `close()` in reverse
+      order, `Logger` extracted to `logger.py`.
+- ☑ Fix double "stopped" log and logging after file close.
+- ☑ `loop()` + `loop_interval` (fixed rate) and `request_stop()`.
+- ☑ First tests: `tests/test_logger.py`, `test_device_manager.py`, `test_rpi_app.py`
+      (38 tests, CPython); core smoke-tested on the MicroPython unix port.
+- ☐ Verify on a Pico 2 W from Thonny (Stop button → devices closed, log ends with
+      "stopped").
+- Carried to Step 5: `SolenoidValve`, `PositionalServoManager`, `PiHardwareAdapter`
+  still have `cleanup()` not `close()`, so registering them does **not** make them
+  safe on stop (call `cleanup()` in `teardown()` until converted).
+  `I2SDACDeviceManager.deinitialize()` → `close()`. `SolenoidValve.is_open` (valve
+  state) shadows the base property — rename to `valve_open`. `LEDSimple` has no
+  `close()` (LED left as is). Update `examples/main.py` to `teardown()`/`loop()`.
 
 ### Step 4 — Test & CI skeleton · `feature/tests-ci`
 - ☐ `tests/stubs/` fake `machine`, `network`, `gpiozero`, `smbus2`.
