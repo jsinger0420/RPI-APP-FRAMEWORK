@@ -77,9 +77,7 @@ conversation.
       + build/`twine check`. Black and ruff import order applied to the whole repo.
 - ☑ GitHub Actions `publish.yml`: build + publish to PyPI on a `v*` tag via Trusted
       Publishing (`docs/RELEASING.md`).
-- ☐ One-time setup by the owner: add the trusted publisher on PyPI and the `pypi`
-      environment on GitHub (`docs/RELEASING.md`). Mark the CI checks as required for
-      `main` in branch protection.
+- Owner's one-time PyPI/GitHub release setup deferred to Step 6 (before tagging).
 - Simulation limits: the Pico run uses CPython's standard library, so `threading`,
   `subprocess` etc. are not caught; real-firmware testing still needed (Steps 2/3).
 - Carried to Step 5 — import-smoke strict xfails (delete the entry in
@@ -111,6 +109,10 @@ docstrings, device doc from `docs/devices/_TEMPLATE.md`, tests.
 - ☐ Vision: `MotionDetector` → decide placement (ADR)
 
 ### Step 6 — Packaging & docs · `chore/packaging`
+- ☐ Before tagging 0.2.0 (owner, one time, `docs/RELEASING.md`): add the trusted
+      publisher on PyPI and the `pypi` environment on GitHub. Do not push a `v*` tag
+      before this, or the publish job fails at upload. Optional: make the CI checks
+      required for `main` in branch protection.
 - ☐ `pyproject.toml`: extras per feature, `requires-python >=3.9`, classifiers to
       3.13, fix project URLs, single-sourced version.
 - ☐ `package.json` for MicroPython `mip` install.
