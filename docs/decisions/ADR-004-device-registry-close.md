@@ -38,7 +38,8 @@ projects.
   Subclass `close()` must therefore tolerate missing attributes.
 - `close()` on a registered device also unregisters it, so closing early frees it.
 - The owning app is kept in private `_app`; there is no public `app` property, because
-  `MicrodotManager` already uses `self.app` for its Microdot server.
+  `MicrodotManager` already used `self.app` for its Microdot server (renamed `server`
+  in Step 5, ADR-009; `_app` stays private).
 - `RPIApp.add_device()` accepts any object with `close()`, for managers not yet on the
   contract (e.g. `CameraDeviceManager`), and returns the device.
 - `KeyboardInterrupt` during `teardown()` or a device's `close()` is logged and shutdown

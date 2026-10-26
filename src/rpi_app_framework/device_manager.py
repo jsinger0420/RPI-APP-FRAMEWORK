@@ -91,8 +91,8 @@ class DeviceManager:
         # Named _device_open (not _is_open) so a subclass can use _is_open
         # for its own hardware state without clashing.
         self._device_open = True
-        # Owning RPIApp. Private, with no public "app" property, because
-        # MicrodotManager uses self.app for its Microdot server.
+        # Owning RPIApp. Private, with no public "app" property, so that
+        # subclasses may use the name "app" for their own objects.
         self._app = None
 
         if app is not None and getattr(app, "add_device", None) is None:
