@@ -80,7 +80,9 @@ class MotorDriverTB6612FNG(DeviceManager):
         self._validate_names(motor_a_name, motor_b_name)
         self.motor_a_name = motor_a_name
         self.motor_b_name = motor_b_name
-        self._validate_pins([pwma_pin, ain1_pin, ain2_pin, pwmb_pin, bin1_pin, bin2_pin, stby_pin])
+        self._validate_pins(
+            [pwma_pin, ain1_pin, ain2_pin, pwmb_pin, bin1_pin, bin2_pin, stby_pin]
+        )
 
         if IS_MICROPYTHON:
             from machine import PWM, Pin
@@ -156,7 +158,9 @@ class MotorDriverTB6612FNG(DeviceManager):
         """
         for name in [motor_a_name, motor_b_name]:
             if not isinstance(name, str) or len(name.strip()) == 0 or len(name) > 50:
-                raise ValueError("Motor name must be a non-empty string up to 50 characters")
+                raise ValueError(
+                    "Motor name must be a non-empty string up to 50 characters"
+                )
 
     def _validate_pins(self, pins):
         """Check that every pin is a valid GPIO number for this platform.
@@ -224,7 +228,9 @@ class MotorDriverTB6612FNG(DeviceManager):
         Raises:
             ValueError: If ``motor_name`` is unknown.
         """
-        pwm, _, _, actual_name, speed_attr, dir_attr = self._get_motor_functions(motor_name)
+        pwm, _, _, actual_name, speed_attr, dir_attr = self._get_motor_functions(
+            motor_name
+        )
         self._set_duty(pwm, 0)
         setattr(self, speed_attr, 0)
         setattr(self, dir_attr, None)
@@ -243,9 +249,23 @@ class MotorDriverTB6612FNG(DeviceManager):
             ValueError: If ``motor_name`` is unknown.
         """
         if motor_name == self.motor_a_name:
-            return (self.pwma, self.ain1, self.ain2, self.motor_a_name, "motor_a_speed", "motor_a_direction")
+            return (
+                self.pwma,
+                self.ain1,
+                self.ain2,
+                self.motor_a_name,
+                "motor_a_speed",
+                "motor_a_direction",
+            )
         elif motor_name == self.motor_b_name:
-            return (self.pwmb, self.bin1, self.bin2, self.motor_b_name, "motor_b_speed", "motor_b_direction")
+            return (
+                self.pwmb,
+                self.bin1,
+                self.bin2,
+                self.motor_b_name,
+                "motor_b_speed",
+                "motor_b_direction",
+            )
         else:
             raise ValueError(
                 f"Invalid motor name: {motor_name}. Must be '{self.motor_a_name}' or '{self.motor_b_name}'"
@@ -263,7 +283,9 @@ class MotorDriverTB6612FNG(DeviceManager):
         """
         if not 0 <= speed <= 100:
             raise ValueError("Speed must be between 0 and 100")
-        pwm, dir1, dir2, actual_name, speed_attr, dir_attr = self._get_motor_functions(motor_name)
+        pwm, dir1, dir2, actual_name, speed_attr, dir_attr = self._get_motor_functions(
+            motor_name
+        )
         self._set_pin(dir1, 1)
         self._set_pin(dir2, 0)
         self._set_duty(pwm, speed)
@@ -283,7 +305,9 @@ class MotorDriverTB6612FNG(DeviceManager):
         """
         if not 0 <= speed <= 100:
             raise ValueError("Speed must be between 0 and 100")
-        pwm, dir1, dir2, actual_name, speed_attr, dir_attr = self._get_motor_functions(motor_name)
+        pwm, dir1, dir2, actual_name, speed_attr, dir_attr = self._get_motor_functions(
+            motor_name
+        )
         self._set_pin(dir1, 0)
         self._set_pin(dir2, 1)
         self._set_duty(pwm, speed)
@@ -314,7 +338,9 @@ class MotorDriverTB6612FNG(DeviceManager):
         """
         if not 0 < amount <= 100:
             raise ValueError("Amount must be positive and <= 100")
-        _, _, _, actual_name, speed_attr, dir_attr = self._get_motor_functions(motor_name)
+        _, _, _, actual_name, speed_attr, dir_attr = self._get_motor_functions(
+            motor_name
+        )
         new_speed = min(100, getattr(self, speed_attr) + amount)
         direction = getattr(self, dir_attr)
         if new_speed > 0 and direction is not None:
@@ -323,7 +349,9 @@ class MotorDriverTB6612FNG(DeviceManager):
             else:
                 self.reverse(motor_name, new_speed)
         else:
-            self._log(f"{actual_name} speed increase skipped (no direction or already stopped)")
+            self._log(
+                f"{actual_name} speed increase skipped (no direction or already stopped)"
+            )
 
     def decrease_speed(self, motor_name, amount=10):
         """Lower a running motor's speed, keeping its direction; stop at 0 %.
@@ -337,7 +365,9 @@ class MotorDriverTB6612FNG(DeviceManager):
         """
         if not 0 < amount <= 100:
             raise ValueError("Amount must be positive and <= 100")
-        _, _, _, actual_name, speed_attr, dir_attr = self._get_motor_functions(motor_name)
+        _, _, _, actual_name, speed_attr, dir_attr = self._get_motor_functions(
+            motor_name
+        )
         new_speed = max(0, getattr(self, speed_attr) - amount)
         direction = getattr(self, dir_attr)
         if new_speed > 0 and direction is not None:

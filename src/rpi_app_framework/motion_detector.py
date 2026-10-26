@@ -1,6 +1,7 @@
+from datetime import datetime
+
 import cv2
 import numpy as np
-from datetime import datetime
 
 
 class MotionDetector:
@@ -20,7 +21,7 @@ class MotionDetector:
         blur_kernel=(21, 21),
         threshold_value=25,
         dilate_iterations=2,
-        log_func=print
+        log_func=print,
     ):
         """
         :param min_area: Minimum contour area to consider as motion.
@@ -81,11 +82,15 @@ class MotionDetector:
         self._prev_gray = gray
 
         # Threshold + dilation
-        _, thresh = cv2.threshold(frame_delta, self.threshold_value, 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(
+            frame_delta, self.threshold_value, 255, cv2.THRESH_BINARY
+        )
         thresh = cv2.dilate(thresh, None, iterations=self.dilate_iterations)
 
         # Find contours
-        contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
 
         motion_regions = []
         now = datetime.now()
@@ -105,6 +110,8 @@ class MotionDetector:
             )
 
         if motion_regions:
-            self.log(f"[MotionDetector] Detected {len(motion_regions)} region(s) at {now}.")
+            self.log(
+                f"[MotionDetector] Detected {len(motion_regions)} region(s) at {now}."
+            )
 
         return motion_regions

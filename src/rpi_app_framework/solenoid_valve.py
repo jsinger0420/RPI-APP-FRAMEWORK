@@ -32,7 +32,9 @@ class SolenoidValve(DeviceManager):
         active_high (bool): True if a HIGH level opens the valve.
     """
 
-    def __init__(self, control_pin, name="Solenoid Valve", log_func=None, active_high=True):
+    def __init__(
+        self, control_pin, name="Solenoid Valve", log_func=None, active_high=True
+    ):
         """Initialize the valve and make sure it is closed.
 
         Args:
@@ -65,7 +67,9 @@ class SolenoidValve(DeviceManager):
 
         self._is_open = False
         self._write(False)  # start closed
-        self._log(f"{self.name} initialized on pin {control_pin} (active_high={active_high}) - closed")
+        self._log(
+            f"{self.name} initialized on pin {control_pin} (active_high={active_high}) - closed"
+        )
 
     def _write(self, open_):
         """Drive the control pin so the valve is open or closed.

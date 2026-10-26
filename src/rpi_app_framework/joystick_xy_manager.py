@@ -8,15 +8,19 @@ Supports Raspberry Pi Pico (MicroPython) and full Raspberry Pi boards.
 
 # Platform & ADC imports
 try:
-    from machine import Pin, ADC
+    from machine import ADC, Pin
+
     MICROPYTHON = True
 except ImportError:
     # Full RPi - we'll use gpiozero for button, and assume external ADC or warn user
     from gpiozero import Button
+
     MICROPYTHON = False
 
-from .device_manager import DeviceManager
 import time
+
+from .device_manager import DeviceManager
+
 
 class JoystickXYManager(DeviceManager):
     """
@@ -36,14 +40,14 @@ class JoystickXYManager(DeviceManager):
 
     def __init__(
         self,
-        x_pin,                  # ADC pin for X axis (e.g. 26 on Pico)
-        y_pin,                  # ADC pin for Y axis (e.g. 27 on Pico)
-        button_pin,             # Digital pin for push button (active low usually)
+        x_pin,  # ADC pin for X axis (e.g. 26 on Pico)
+        y_pin,  # ADC pin for Y axis (e.g. 27 on Pico)
+        button_pin,  # Digital pin for push button (active low usually)
         name="Joystick XY",
         deadzone=DEFAULT_DEADZONE,
         x_center_offset=0,
         y_center_offset=0,
-        log_func=None
+        log_func=None,
     ):
         """
         Initialize KY-023 joystick controller.
@@ -104,8 +108,12 @@ class JoystickXYManager(DeviceManager):
         x_raw, y_raw, pressed = self.read_raw()
 
         # Normalize to -1..1
-        x_norm = (x_raw - self.DEFAULT_CENTER_RAW) / (self.DEFAULT_MAX_RAW - self.DEFAULT_CENTER_RAW)
-        y_norm = (y_raw - self.DEFAULT_CENTER_RAW) / (self.DEFAULT_MAX_RAW - self.DEFAULT_CENTER_RAW)
+        x_norm = (x_raw - self.DEFAULT_CENTER_RAW) / (
+            self.DEFAULT_MAX_RAW - self.DEFAULT_CENTER_RAW
+        )
+        y_norm = (y_raw - self.DEFAULT_CENTER_RAW) / (
+            self.DEFAULT_MAX_RAW - self.DEFAULT_CENTER_RAW
+        )
 
         # Apply deadzone
         if abs(x_norm) < self.deadzone:
@@ -145,7 +153,9 @@ class JoystickXYManager(DeviceManager):
         self.x_offset = self.DEFAULT_CENTER_RAW - x_center
         self.y_offset = self.DEFAULT_CENTER_RAW - y_center
 
-        self._log(f"Calibration complete → X offset: {self.x_offset:.0f}, Y offset: {self.y_offset:.0f}")
+        self._log(
+            f"Calibration complete → X offset: {self.x_offset:.0f}, Y offset: {self.y_offset:.0f}"
+        )
 
     def log_position(self, interval_sec=0.5):
         """Debug helper: continuously log current position."""

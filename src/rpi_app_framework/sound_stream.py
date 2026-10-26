@@ -4,8 +4,9 @@
 # Inherits from DeviceManager for logging and naming consistency
 # ============================================================
 
-import wave
 import array
+import wave
+
 from .device_manager import DeviceManager
 
 
@@ -56,7 +57,9 @@ class SoundStream(DeviceManager):
             raw = wf.readframes(wf.getnframes())
             self.data = array.array("h", raw)
 
-        self._log(f"{self.name}: Loaded WAV file '{filename}' with {len(self.data)} samples")
+        self._log(
+            f"{self.name}: Loaded WAV file '{filename}' with {len(self.data)} samples"
+        )
 
     def reset(self):
         """Restart playback from the beginning and mark stream active."""

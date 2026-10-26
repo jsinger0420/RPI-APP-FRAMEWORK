@@ -3,6 +3,7 @@ from .device_manager import DeviceManager
 
 try:
     from machine import ADC, Pin
+
     MICROPYTHON = True
 except ImportError:
     MICROPYTHON = False
@@ -65,11 +66,11 @@ class PowerMonitor(DeviceManager):
         :param battery_max_v: Battery voltage at 100% charge (default: 4.2V for 1S LiPo).
         """
         super().__init__(name=name, log_func=log_func)
-        self._adc               = ads1x15
-        self._ads1115_channel   = ads1115_channel
+        self._adc = ads1x15
+        self._ads1115_channel = ads1115_channel
         self._voltage_divider_ratio = voltage_divider_ratio
-        self._battery_min_v     = battery_min_v
-        self._battery_max_v     = battery_max_v
+        self._battery_min_v = battery_min_v
+        self._battery_max_v = battery_max_v
 
     # ——— Preset Factory Methods ———
 
@@ -82,14 +83,18 @@ class PowerMonitor(DeviceManager):
         """
         if not MICROPYTHON:
             from .ads1x15 import ADS1x15
+
             adc = ADS1x15(model="ADS1115", gain=4.096, log_func=log_func)
         else:
             adc = None
         return cls(
-            name=name, log_func=log_func, ads1x15=adc,
+            name=name,
+            log_func=log_func,
+            ads1x15=adc,
             ads1115_channel=ads1115_channel,
             voltage_divider_ratio=2.0,
-            battery_min_v=3.0, battery_max_v=4.2,
+            battery_min_v=3.0,
+            battery_max_v=4.2,
         )
 
     @classmethod
@@ -101,14 +106,18 @@ class PowerMonitor(DeviceManager):
         """
         if not MICROPYTHON:
             from .ads1x15 import ADS1x15
+
             adc = ADS1x15(model="ADS1115", gain=4.096, log_func=log_func)
         else:
             adc = None
         return cls(
-            name=name, log_func=log_func, ads1x15=adc,
+            name=name,
+            log_func=log_func,
+            ads1x15=adc,
             ads1115_channel=ads1115_channel,
             voltage_divider_ratio=4.0,
-            battery_min_v=6.0, battery_max_v=8.4,
+            battery_min_v=6.0,
+            battery_max_v=8.4,
         )
 
     @classmethod
@@ -120,14 +129,18 @@ class PowerMonitor(DeviceManager):
         """
         if not MICROPYTHON:
             from .ads1x15 import ADS1x15
+
             adc = ADS1x15(model="ADS1115", gain=4.096, log_func=log_func)
         else:
             adc = None
         return cls(
-            name=name, log_func=log_func, ads1x15=adc,
+            name=name,
+            log_func=log_func,
+            ads1x15=adc,
             ads1115_channel=ads1115_channel,
             voltage_divider_ratio=5.0,
-            battery_min_v=9.0, battery_max_v=12.6,
+            battery_min_v=9.0,
+            battery_max_v=12.6,
         )
 
     @classmethod
@@ -139,14 +152,18 @@ class PowerMonitor(DeviceManager):
         """
         if not MICROPYTHON:
             from .ads1x15 import ADS1x15
+
             adc = ADS1x15(model="ADS1115", gain=4.096, log_func=log_func)
         else:
             adc = None
         return cls(
-            name=name, log_func=log_func, ads1x15=adc,
+            name=name,
+            log_func=log_func,
+            ads1x15=adc,
             ads1115_channel=ads1115_channel,
             voltage_divider_ratio=6.0,
-            battery_min_v=12.0, battery_max_v=16.8,
+            battery_min_v=12.0,
+            battery_max_v=16.8,
         )
 
     # ——— Properties ———
@@ -171,10 +188,12 @@ class PowerMonitor(DeviceManager):
                 return None
         else:
             try:
-                import subprocess
                 import re
+                import subprocess
+
                 out = subprocess.check_output(
-                    ["vcgencmd", "measure_volts", "core"], text=True)
+                    ["vcgencmd", "measure_volts", "core"], text=True
+                )
                 m = re.search(r"volt=([\d.]+)", out)
                 return float(m.group(1)) if m else None
             except Exception as e:
@@ -223,7 +242,11 @@ class PowerMonitor(DeviceManager):
         v = self.battery_voltage
         if v is None:
             return None
-        percent = (v - self._battery_min_v) / (self._battery_max_v - self._battery_min_v) * 100
+        percent = (
+            (v - self._battery_min_v)
+            / (self._battery_max_v - self._battery_min_v)
+            * 100
+        )
         return round(max(0.0, min(100.0, percent)), 1)
 
     @property
@@ -289,16 +312,16 @@ class PowerMonitor(DeviceManager):
             return {}
         try:
             import subprocess
-            out = subprocess.check_output(
-                ["vcgencmd", "get_throttled"], text=True)
+
+            out = subprocess.check_output(["vcgencmd", "get_throttled"], text=True)
             bits = int(out.strip().split("=")[1], 16)
             return {
-                "undervoltage_now":      bool(bits & 0x1),
-                "freq_capped_now":       bool(bits & 0x2),
-                "throttled_now":         bool(bits & 0x4),
+                "undervoltage_now": bool(bits & 0x1),
+                "freq_capped_now": bool(bits & 0x2),
+                "throttled_now": bool(bits & 0x4),
                 "undervoltage_occurred": bool(bits & 0x10000),
-                "freq_capped_occurred":  bool(bits & 0x20000),
-                "throttled_occurred":    bool(bits & 0x40000),
+                "freq_capped_occurred": bool(bits & 0x20000),
+                "throttled_occurred": bool(bits & 0x40000),
             }
         except Exception as e:
             self._log(f"Throttle status read failed: {e}")
@@ -327,7 +350,7 @@ class PowerMonitor(DeviceManager):
         else:
             if (ma := self.current_ma) is not None:
                 parts.append(f"Current: {ma:.0f}mA")
-            if (t := self.throttle_status):
+            if t := self.throttle_status:
                 active = [k for k, v in t.items() if v]
                 if active:
                     parts.append(f"Warnings: {', '.join(active)}")
@@ -342,4 +365,3 @@ class PowerMonitor(DeviceManager):
         """
         if self._adc is not None:
             self._adc.close()
-

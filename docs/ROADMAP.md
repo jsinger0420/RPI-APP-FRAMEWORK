@@ -66,12 +66,30 @@ conversation.
   `close()` (LED left as is). Update `examples/main.py` to `teardown()`/`loop()`.
 
 ### Step 4 — Test & CI skeleton · `feature/tests-ci`
-- ☐ `tests/stubs/` fake `machine`, `network`, `gpiozero`, `smbus2`.
-- ☐ Tests for `RPIApp` lifecycle and `DeviceManager` contract on both simulated
-      platforms.
-- ☐ Import-smoke test: every module imports on a plain PC.
-- ☐ GitHub Actions: ruff + black check + pytest on 3.9–3.13.
-- ☐ GitHub Actions: build + publish to PyPI on tag via Trusted Publishing.
+- ☑ `tests/stubs/` fake `machine`, `network`, `gpiozero`, `smbus2` (test helpers start
+      with `sim_`; gpiozero stub raises `GPIOPinInUse` for pins not closed).
+- ☑ Simulated platforms: `stubs.simulate` + `pytest --platform=micropython` (Pico 2 W).
+      A plain `pytest` also re-runs the suite under the Pico simulation, so the
+      `RPIApp` lifecycle and `DeviceManager` contract tests cover both platforms.
+- ☑ Import-smoke test (`tests/test_import_smoke.py`): every module imports in a clean
+      `python -I -S` interpreter, as a plain PC and as the simulated Pico.
+- ☑ GitHub Actions `ci.yml`: ruff + black check + pytest on 3.9–3.13 (+ Windows 3.13)
+      + build/`twine check`. Black and ruff import order applied to the whole repo.
+- ☑ GitHub Actions `publish.yml`: build + publish to PyPI on a `v*` tag via Trusted
+      Publishing (`docs/RELEASING.md`).
+- ☐ One-time setup by the owner: add the trusted publisher on PyPI and the `pypi`
+      environment on GitHub (`docs/RELEASING.md`). Mark the CI checks as required for
+      `main` in branch protection.
+- Simulation limits: the Pico run uses CPython's standard library, so `threading`,
+  `subprocess` etc. are not caught; real-firmware testing still needed (Steps 2/3).
+- Carried to Step 5 — import-smoke strict xfails (delete the entry in
+  `KNOWN_FAILURES` when fixed): plain PC: `I2SDACdevice_manager` (alsaaudio),
+  `ble_manager` + `linux_ble_gatt` (dbus), `cameradevicemanager` (picamera2),
+  `joystick_xy_manager` (gpiozero), `motion_detector` (cv2/numpy),
+  `positional_servo_manager` (gpiozero.pins.pigpio). Pico: `ble_manager` (checks
+  `sys.implementation` itself, so it takes the Linux path), plus the Linux-only
+  camera/vision/`linux_ble_gatt` modules. Ruff `per-file-ignores` in
+  `pyproject.toml` list the modules still missing Google docstrings.
 
 ### Step 5 — Device managers to the new contract (one conversation per group)
 For each: constructor order (`name` first), `close()`, lazy imports, Google
