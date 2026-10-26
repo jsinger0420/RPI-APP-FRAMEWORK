@@ -30,6 +30,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 11 | `feature/ble-manager` | `feature/microdot-manager` | ☐ | ☐ |
 | 12 | `chore/remove-motion-detector` | `feature/ble-manager` | ☐ | ☐ |
 | 13 | `feature/audio` | `chore/remove-motion-detector` | ☐ | ☐ |
+| 14 | `feature/camera` | `feature/audio` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -45,6 +46,7 @@ git push -u origin feature/microdot-manager
 git push -u origin feature/ble-manager
 git push -u origin chore/remove-motion-detector
 git push -u origin feature/audio
+git push -u origin feature/camera
 ```
 
 Branch 12 (ADR-011) only removes `MotionDetector`; it has no hardware test.
@@ -399,3 +401,20 @@ device doc, then a variant that also adds `rain.wav` with `loop=True, volume=0.3
 - ☐ Pi 4 / Pi 5 (overlay, `alsa_device="default"`): same two programs, no stutter;
   Ctrl-C → silence; run twice in a row (device released).
 - ☐ A stereo or 8-bit WAV → clear `ValueError` naming the problem.
+
+## 14. Camera + MJPEG — `feature/camera` (Raspberry Pi only)
+
+Setup: `docs/devices/camera.md` (`sudo apt install python3-picamera2 ffmpeg`; venv with
+`--system-site-packages`; `rpicam-hello --list-cameras` shows the camera). Program: the
+`Watch` example in the device doc, plus in `setup()` a 10 s recording:
+`self.cam.start_recording()` and in `loop()` stop it when `self.ticks == 10`.
+
+- ☐ Pi 4 and Pi 5: `photos/` gets a JPEG each minute that opens and looks right.
+- ☐ The 10 s MP4 in `videos/` plays (VLC) with the right length; photos taken during
+  recording still work.
+- ☐ Browser at `http://<pi>:8000/` shows live video at ~10 fps; two browsers at once
+  both work; CPU use (`top`) is acceptable at 640x480 / 10 fps. Note Pi 4 vs Pi 5.
+- ☐ With no browser open, CPU use drops (no frames grabbed).
+- ☐ Ctrl-C while recording and streaming → log closes `stream` then `cam`; the MP4 is
+  playable; running again works at once (camera and port released).
+- ☐ No camera connected → clear error at start, app stops cleanly.

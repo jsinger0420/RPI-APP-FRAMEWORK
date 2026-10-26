@@ -102,9 +102,6 @@ ignore = ["E501", "D403"]
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-# Modules not yet converted to the 0.2.0 contract (ROADMAP Step 5). Remove a
-# line when its module is converted.
-"src/rpi_app_framework/MJPEGRequestHandler.py" = ["D"]
-"src/rpi_app_framework/cameradevicemanager.py" = ["D"]
+# Every package module follows the docstring rules since Step 5.
 # Examples are rewritten in Step 6.
 "examples/*" = ["D"]
