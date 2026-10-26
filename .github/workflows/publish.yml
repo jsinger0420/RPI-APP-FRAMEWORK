@@ -5,7 +5,7 @@
 # Uses PyPI Trusted Publishing (OIDC): no API token or .pypirc is needed.
 # One-time setup, see docs/RELEASING.md:
 #   1. PyPI > rpi-app-framework > Settings > Publishing > add a GitHub
-#      publisher: owner jsinger0420, repository rpi-app-framework,
+#      publisher: owner jsinger0420, repository RPI-APP-FRAMEWORK,
 #      workflow publish.yml, environment pypi.
 #   2. GitHub > Settings > Environments > create "pypi" (optionally require
 #      a reviewer so each release waits for your approval).

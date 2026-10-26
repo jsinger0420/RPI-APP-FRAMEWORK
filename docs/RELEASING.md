@@ -12,7 +12,7 @@ identity to PyPI with a short-lived OIDC token, so no API token or `.pypirc` is 
    | Field | Value |
    |---|---|
    | Owner | `jsinger0420` |
-   | Repository name | `rpi-app-framework` |
+   | Repository name | `RPI-APP-FRAMEWORK` |
    | Workflow name | `publish.yml` |
    | Environment name | `pypi` |
 
