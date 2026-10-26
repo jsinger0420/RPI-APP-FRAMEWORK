@@ -9,6 +9,8 @@ It also provides:
 
 * :func:`require` for lazy imports of optional or platform-only libraries, with
   an error message that names the pip extra to install.
+* :func:`gpio_pin` to check a GPIO pin number against the platform's range
+  (ADR-005).
 * :func:`ticks_ms` / :func:`ticks_diff` for elapsed-time measurement that works
   the same way on the Pico and on Linux.
 
@@ -17,7 +19,9 @@ Raspberry Pi OS, and on a plain PC (where ``BOARD`` is ``"unknown"``).
 
 Typical usage:
 
-    from ._platform import IS_MICROPYTHON, BOARD, require, ticks_ms, ticks_diff
+    from ._platform import IS_MICROPYTHON, BOARD, gpio_pin, require, ticks_ms
+
+    pin = gpio_pin(pin, arg="pin", feature="LEDSimple")   # ValueError if bad
 
     if IS_MICROPYTHON:
         from machine import Pin
@@ -37,6 +41,8 @@ Attributes:
         ``"pi400"``, ``"pi5"``, ``"pi500"``, ``"pi_zero"``, ``"pi_zero_w"``,
         ``"pi_zero2_w"``, ``"cm1"``, ``"cm3"``, ``"cm4"``, ``"cm5"``, or
         ``"unknown"`` (a PC, or a board this version does not recognize).
+    PICO_GPIO_MAX (int): Highest Pico GPIO number (29).
+    BCM_GPIO_MAX (int): Highest BCM GPIO number on a Raspberry Pi header (27).
 """
 
 import os
@@ -47,6 +53,9 @@ PACKAGE_NAME = "rpi-app-framework"
 
 IS_MICROPYTHON = sys.implementation.name == "micropython"
 IS_LINUX = (not IS_MICROPYTHON) and sys.platform.startswith("linux")
+
+PICO_GPIO_MAX = 29  # GP0-GP29 on the RP2040 and RP2350A (Pico, Pico W, Pico 2 W)
+BCM_GPIO_MAX = 27  # BCM GPIO on the 40-pin header of every Raspberry Pi
 
 _DEVICE_TREE_MODEL_PATHS = (
     "/proc/device-tree/model",
@@ -188,6 +197,53 @@ def require(module_name, extra=None, feature=None):
                 msg += " Install it with pip."
         raise ImportError(msg) from e
     return sys.modules[module_name]
+
+
+def gpio_pin(pin, arg="pin", feature=None):
+    """Check a GPIO pin number for this platform and return it (ADR-005).
+
+    Device managers call this for every GPIO argument before claiming any
+    hardware, so a bad pin gives the same clear error on every device.
+
+    Args:
+        pin: The pin as given by the user: an int, a string of digits such as
+            ``"17"``, or on the Pico ``"LED"`` (the onboard LED).
+        arg: Name of the argument, used in the error message, e.g.
+            ``"control_pin"``.
+        feature: What the pin is for (usually a class name), e.g.
+            ``"SolenoidValve"``. Used only in the error message.
+
+    Returns:
+        int: The GPIO number (0-29 on the Pico, BCM 0-27 on Raspberry Pi OS),
+        or the string ``"LED"`` unchanged on the Pico.
+
+    Raises:
+        ValueError: If ``pin`` is None, a bool, a float, a string that is not
+            all digits (other than ``"LED"`` on the Pico), or a number outside
+            the platform's range.
+
+    Example:
+        >>> gpio_pin("17", arg="pin", feature="LEDSimple")   # Raspberry Pi OS
+        17
+    """
+    prefix = "{} {}".format(feature, arg) if feature else arg
+    if pin is None:
+        raise ValueError("{} is required".format(prefix))
+    if IS_MICROPYTHON and pin == "LED":
+        return pin
+    number = None
+    if isinstance(pin, int) and not isinstance(pin, bool):
+        number = pin
+    elif isinstance(pin, str) and pin.isdigit():
+        number = int(pin)
+    high = PICO_GPIO_MAX if IS_MICROPYTHON else BCM_GPIO_MAX
+    if number is None or not 0 <= number <= high:
+        if IS_MICROPYTHON:
+            valid = "a GPIO number from 0 to {} or 'LED' on the Pico".format(high)
+        else:
+            valid = "a BCM GPIO number from 0 to {} on Raspberry Pi OS".format(high)
+        raise ValueError("{} must be {}, got {!r}".format(prefix, valid, pin))
+    return number
 
 
 if IS_MICROPYTHON:

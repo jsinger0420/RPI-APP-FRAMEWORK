@@ -95,8 +95,6 @@ After `close()` every control method raises `RuntimeError`.
 - No signed "drive(m, -100..100)" helper for joystick control yet; could be added with
   `JoystickXYManager` in Step 5.
 - No ramping (soft start/stop); large speed jumps or instant reversals stress gearboxes.
-- The pin-range check is similar to the ones in `led_simple.py` and
-  `solenoid_valve.py`; moving them to the platform layer needs an ADR.
 - Not yet verified on a Pico 2 W, Pi 4 or Pi 5.
 
 ## Example

@@ -72,8 +72,6 @@ After `close()`, `open_valve`/`close_valve`/`toggle`/`pulse` raise `RuntimeError
 ## Known issues / TODO
 - No automatic maximum open time; apps check `open_time_ms` in `loop()`. A
   `max_open_ms` option would need a timer or the `RPIApp` scheduler (backlog).
-- The BCM 0–27 validation helper is duplicated in `led_simple.py`; consider moving it
-  to the platform layer (needs an ADR per CLAUDE.md).
 - Not yet verified on a Pico 2 W, Pi 4 or Pi 5.
 
 ## Example

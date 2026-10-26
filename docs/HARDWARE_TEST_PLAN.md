@@ -20,12 +20,17 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 1 | `feature/led-simple` | `main` | ☐ | ☐ |
 | 2 | `feature/solenoid-valve` | `feature/led-simple` | ☐ | ☐ |
 | 3 | `feature/motor-driver-tb6612` | `feature/solenoid-valve` | ☐ | ☐ |
+| 4 | `feature/gpio-pin-check` | `feature/motor-driver-tb6612` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
 git push -u origin feature/solenoid-valve
 git push -u origin feature/motor-driver-tb6612
+git push -u origin feature/gpio-pin-check
 ```
+
+Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
+on the newest branch you have pushed; the device tests below cover it.
 
 Open each PR with the previous branch as its base (GitHub retargets it to `main` when
 the one before is merged), or wait and open each after the previous one is merged.

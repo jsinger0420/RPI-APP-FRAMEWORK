@@ -104,6 +104,10 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
 - ◐ `MotorDriverTB6612FNG` · `feature/motor-driver-tb6612` —
       `tests/test_motor_driver_tb6612.py`, `docs/devices/motor_driver_tb6612.md`.
       `stop(motor)`/`start(motor)` removed; `stop_motor` coasts, new `brake`.
+- ☑ ADR-005 · `feature/gpio-pin-check` — `_platform.gpio_pin()` replaces the pin
+      checks in `LEDSimple`, `SolenoidValve` and `MotorDriverTB6612FNG`; use it in
+      every later device group. (No hardware test of its own: the device tests cover
+      it.)
 - ☐ `PositionalServoManager`
 - ☐ `JoystickXYManager`
 - ☐ `ADS1x15` + `PowerMonitor`
@@ -147,4 +151,5 @@ See `docs/decisions/`.
 | 001 | Google-style docstrings | Accepted |
 | 002 | Breaking API changes allowed in 0.2; `name` first in constructors | Accepted |
 | 003 | `_platform.py` and gpiozero instead of RPi.GPIO | Accepted |
-| 004 | Device registry and uniform `close()` | Proposed |
+| 004 | Device registry and uniform `close()` | Accepted |
+| 005 | GPIO pin numbers checked by `_platform.gpio_pin()` | Accepted (on branch) |
