@@ -24,10 +24,9 @@ Typical usage:
 
 import time
 
-from ._platform import IS_MICROPYTHON, gpio_pin, require
+from ._platform import IS_MICROPYTHON, analog_input, gpio_pin, require
 from .device_manager import DeviceManager
 
-_PICO_ADC_PINS = (26, 27, 28, 29)
 _RAW_MAX = 65535
 _CENTER_RAW = 32768
 
@@ -106,8 +105,8 @@ class JoystickXYManager(DeviceManager):
         self.invert_y = bool(invert_y)
         self._x_center = _CENTER_RAW
         self._y_center = _CENTER_RAW
-        self._x = _analog_input(x_input, "x_input")
-        self._y = _analog_input(y_input, "y_input")
+        self._x = analog_input(x_input, arg="x_input", feature="JoystickXYManager")
+        self._y = analog_input(y_input, arg="y_input", feature="JoystickXYManager")
         self.button_pin = None
         self._button = None
         if button_pin is not None:
@@ -274,41 +273,6 @@ class JoystickXYManager(DeviceManager):
         if IS_MICROPYTHON:
             return self._button.value() == 0
         return bool(self._button.is_pressed)
-
-
-def _analog_input(value, arg):
-    """Turn an analog-input argument into an object with ``read_u16()`` (ADR-007).
-
-    Args:
-        value: Pico ADC pin number, or an object with ``read_u16()``.
-        arg: Argument name for error messages.
-
-    Returns:
-        An object with ``read_u16()``.
-
-    Raises:
-        ValueError: If ``value`` is missing, a pin on Raspberry Pi OS, or not
-            an ADC pin on the Pico.
-    """
-    if value is None:
-        raise ValueError("JoystickXYManager {} is required".format(arg))
-    if getattr(value, "read_u16", None) is not None:
-        return value
-    if not IS_MICROPYTHON:
-        raise ValueError(
-            "Raspberry Pi boards have no analog inputs: {} must be an external "
-            "ADC channel with read_u16() (e.g. an ADS1115), got {!r}".format(arg, value)
-        )
-    pin = gpio_pin(value, arg=arg, feature="JoystickXYManager")
-    if pin not in _PICO_ADC_PINS:
-        raise ValueError(
-            "{} must be an ADC pin (26, 27, 28 or 29) on the Pico, got {!r}".format(
-                arg, value
-            )
-        )
-    from machine import ADC, Pin
-
-    return ADC(Pin(pin))
 
 
 def _describe(value):

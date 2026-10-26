@@ -21,7 +21,15 @@ sensors (light, soil moisture, potentiometers) have the same need.
   convert to 0–65535 internally. They never import an ADC chip driver themselves.
 - External ADC drivers expose their channels as such objects. The `ADS1x15` group
   adds `ADS1x15.channel(n)` returning one; until then a few-line adapter class works.
-- `_platform` is unchanged: this is an interface convention, not platform code.
+- An analog input **may** also have `read_voltage()` returning volts. Devices that
+  need volts use it when present, and otherwise compute
+  `read_u16() / 65535 * adc_ref_v` (3.3 V for the Pico ADC).
+- `_platform.analog_input(value, arg, feature)` turns the argument into an object
+  (opening `machine.ADC` for a Pico pin) and gives the same errors everywhere.
+
+Amended 2026-10-26 on `feature/ads1x15-power-monitor`: optional `read_voltage()` and
+the `analog_input()` helper were added when the second user (`PowerMonitor`) arrived;
+`_platform` was originally to stay unchanged.
 
 ## Consequences
 - `JoystickXYManager` works on Raspberry Pi OS with any external ADC, and on the Pico

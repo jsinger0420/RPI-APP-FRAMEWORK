@@ -124,7 +124,7 @@ def test_linux_borrowed_smbus_is_not_closed():
 def test_linux_owned_bus_is_closed():
     """A bus number is opened by the board and closed on close()."""
     board, _, _ = make_board()
-    bus = board._bus
+    bus = board._dev.bus
     board.close()
     assert bus.closed
 

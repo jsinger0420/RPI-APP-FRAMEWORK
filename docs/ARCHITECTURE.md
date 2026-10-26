@@ -191,12 +191,27 @@ def require(module_name, extra=None, feature=None)  # import or raise ImportErro
 def gpio_pin(pin, arg="pin", feature=None)  # check a GPIO number: Pico 0-29 or
                                             # "LED", Linux BCM 0-27; returns int
                                             # (ADR-005, Step 5)
+def analog_input(value, arg, feature)       # Pico ADC pin -> machine.ADC, or an
+                                            # object with read_u16() unchanged
+                                            # (ADR-007, Step 5)
 def ticks_ms() -> int; def ticks_diff(new, old) -> int   # elapsed ms on both
 ```
 
+### `_i2c.py` (Step 5, ADR-008)
+
+```python
+class I2CDevice(i2c, address, feature)      # Pico: machine.I2C (borrowed);
+                                            # Linux: bus number (owned, smbus2) or
+                                            # an SMBus (borrowed)
+    write(register, data); read(register, n) -> bytes; close(); owns_bus
+```
+
+Every I2C device manager (`PCA9685`, `ADS1x15`, later BME280/SSD1306) goes through it.
+It is separate from `_platform.py` so GPIO-only Pico apps do not load it.
+
 Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
 `motor_driver_tb6612`, `pi_hardware_adapter`, `positional_servo_manager`, `pca9685`,
-`joystick_xy_manager`. The remaining device modules still use
+`joystick_xy_manager`, `ads1x15`, `power_monitor`. The remaining device modules still use
 their own detection and some top-level optional imports
 (`I2SDACdevice_manager`, `cameradevicemanager`,
 `motion_detector`, `linux_ble_gatt`); they move to `_platform` in Step 5.
@@ -256,8 +271,8 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `pca9685.py` | `PCA9685` | ✓ | ✓ | DM | new in Step 5 (ADR-006); native driver, `i2c` extra; `docs/devices/pca9685.md` |
 | `solenoid_valve.py` | `SolenoidValve` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/solenoid_valve.md` |
 | `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); axes are analog inputs (ADR-007), external ADC on Linux; `docs/devices/joystick_xy_manager.md` |
-| `ads1x15.py` | `ADS1x15` | ? | ✓ | DM | smbus2 on Linux |
-| `power_monitor.py` | `PowerMonitor` | ✓ | ✓ | DM | uses ADS1x15 on Linux |
+| `ads1x15.py` | `ADS1x15` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `_i2c` (ADR-008); `channel(n)` analog inputs (ADR-007); `docs/devices/ads1x15.md` |
+| `power_monitor.py` | `PowerMonitor` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); battery is an analog input; `docs/devices/power_monitor.md` |
 | `pi_hardware_adapter.py` | `PiHardwareAdapter` | ✓ | ✓ | DM | duplicate `hardware.py` removed |
 | `wifi_manager.py` | `WiFiManager` | ✓ | ✓ | DM | `network` / `nmcli`; reads `wifi_config.json` |
 | `ble_manager.py` + `linux_ble_gatt.py` | `BLEManager` | ✓ | ✓ | DM | BlueZ via dbus on Linux |

@@ -17,8 +17,8 @@ the stick is pressed down.
 - Pico: X and Y go to ADC pins GP26 (ADC0), GP27 (ADC1) or GP28 (ADC2). GP29 is ADC3 but
   on most Pico boards it measures VSYS or is used by the wireless chip.
 - Raspberry Pi: no analog inputs on any model. Use an external ADC: an ADS1115 (I2C,
-  `ADS1x15`, gets `channel(n)` analog inputs in its Step 5 group) or an MCP3008 (SPI,
-  supported by gpiozero today — see Example).
+  `adc.channel(n, full_scale_v=3.3)`) or an MCP3008 (SPI, through gpiozero — see
+  Example).
 - The rest position of a cheap stick is rarely exactly mid-scale; call
   `calibrate_center()` at start-up.
 
@@ -65,8 +65,6 @@ when driving motors: `speed = abs(y) * 100`.
 Input-only device: nothing to make safe. `close()` releases the button pin on Linux.
 
 ## Known issues / TODO
-- `ADS1x15.channel(n)` (ADR-007) arrives with the ADS1x15 group; use the MCP3008
-  adapter below or a small adapter around `ADS1x15` until then.
 - No smoothing/averaging option for noisy ADCs.
 - No button callbacks (`when_pressed`); poll `is_pressed` in `loop()`.
 - Not yet verified on a Pico 2 W, Pi 4 or Pi 5.
@@ -92,6 +90,20 @@ class Stick(RPIApp):
 
 Stick(app_name="Stick", loop_interval=0.2).start()
 ```
+
+Raspberry Pi with an ADS1115 (I2C; the module and the ADS1115 both on 3.3 V):
+
+```python
+from rpi_app_framework.ads1x15 import ADS1x15
+
+adc = ADS1x15("adc", i2c=1, app=self)
+joy = JoystickXYManager("stick", x_input=adc.channel(0, full_scale_v=3.3),
+                        y_input=adc.channel(1, full_scale_v=3.3),
+                        button_pin=22, app=self)
+```
+
+Each `read()` then does two conversions (about 16 ms at the default 128 SPS); use
+`ADS1x15(..., data_rate=860)` for a faster loop.
 
 Raspberry Pi with an MCP3008 on SPI (enable SPI in `raspi-config`):
 
