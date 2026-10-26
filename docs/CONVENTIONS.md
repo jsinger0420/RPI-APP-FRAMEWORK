@@ -121,7 +121,12 @@ Memory:
       as keywords (ADR-002).
 - [ ] Validates hardware parameters and raises `ValueError` with a clear message.
 - [ ] Puts hardware in a safe state at init (outputs off).
-- [ ] Implements idempotent `close()` that returns hardware to a safe state.
+- [ ] Implements idempotent `close()`: `if not self.is_open: return`, make hardware
+      safe (tolerating attributes a failed constructor never set), then
+      `super().close()`.
+- [ ] Hardware methods start with `self._require_open()`.
+- [ ] Does not define its own `_device_open`, `_app` or `is_open` (reserved by the
+      base class).
 - [ ] Logs state changes via `self._log()`, not `print()`.
 - [ ] Imports platform libraries lazily.
 - [ ] Google docstrings everywhere, with units and platform notes.
