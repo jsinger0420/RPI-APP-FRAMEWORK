@@ -57,6 +57,10 @@ All notable changes to this project are documented here. Format based on
   (pulses off, pin or channel released), `with` support. New `detach()`,
   `start_angle`, `speed_dps` (smooth moves in degrees per second), `angle` and
   `angle_to_pulse_us()`. Device doc: `docs/devices/positional_servo_manager.md`.
+- `JoystickXYManager` follows the device contract (ADR-004) and works on Raspberry Pi
+  OS with an external ADC: each axis is an analog input (ADR-007), a Pico ADC pin or
+  any object with `read_u16()`. New `read()`, `center`, `invert_x`/`invert_y`, and
+  an optional button. Device doc: `docs/devices/joystick_xy_manager.md`.
 - `MotorDriverTB6612FNG` follows the device contract (ADR-004): `app=`, `close()`
   (standby, motors off, pins released) and `with` support. New `brake(motor)` (short
   brake) and `enabled`. Device doc: `docs/devices/motor_driver_tb6612.md`.
@@ -147,12 +151,27 @@ All notable changes to this project are documented here. Format based on
   pin factory (lgpio on the Pi 5) instead of forcing pigpio, so it no longer needs the
   pigpio daemon and works on the Pi 5. For less jitter on a Pi 1-4, set
   `GPIOZERO_PIN_FACTORY=pigpio`, or use a PCA9685.
+- **BREAKING:** `JoystickXYManager(name=None, x_input=None, y_input=None,
+  button_pin=None, deadzone=0.08, invert_x=False, invert_y=False, log_func=None,
+  app=None)`: name first (ADR-002); `x_pin`/`y_pin` renamed `x_input`/`y_input`;
+  `button_pin` is optional. Migration: `JoystickXYManager(26, 27, 22)` becomes
+  `JoystickXYManager("stick", x_input=26, y_input=27, button_pin=22)`.
+- **BREAKING:** `JoystickXYManager.read_normalized()` is now `read()`, returning
+  `(x, y, pressed)`; outside the deadzone values are rescaled so they rise smoothly
+  from 0 (they jumped to the deadzone value before). `read_raw()` returns `(x, y)`
+  without the button. `is_pressed` and `is_centered` are properties, not methods.
+- **BREAKING:** `JoystickXYManager.calibrate_center()` stores the measured rest
+  position as the center (each half-axis is scaled to reach -1 and 1), rejects a
+  stick that is not at rest, and returns the center. The `x_center_offset`/
+  `y_center_offset` arguments are removed.
 - `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
   a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a
   Pico and a Raspberry Pi.
 
 ### Removed
+- **BREAKING:** `JoystickXYManager.log_position()` (it never returned). Log `read()`
+  from `loop()` instead.
 - **BREAKING:** `PositionalServoManager.cleanup()` (use `close()`), the unused
   `neutral_us` and `idle_timeout_sec` arguments, the `smooth_speed_deg_per_sec`
   argument (now `speed_dps`), and the `i2c` argument (use `pca=`). The
@@ -198,6 +217,8 @@ All notable changes to this project are documented here. Format based on
   creates every pin at its off level, so the motors cannot twitch at start-up.
 - `MotorDriverTB6612FNG`: if a later pin could not be claimed, the pins already
   claimed are released when the app closes the driver.
+- `JoystickXYManager` imports on a PC and works on Raspberry Pi OS (it raised
+  `NotImplementedError` after claiming the button pin).
 - `PositionalServoManager` imports on a PC and on a Pi without pigpio (it imported
   `gpiozero.pins.pigpio` at module level).
 - `PositionalServoManager` smooth moves now reach fractional targets and step at a

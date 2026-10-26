@@ -195,9 +195,10 @@ def ticks_ms() -> int; def ticks_diff(new, old) -> int   # elapsed ms on both
 ```
 
 Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
-`motor_driver_tb6612`, `pi_hardware_adapter`. The remaining device modules still use
-their own detection and some top-level optional imports (`joystick_xy_manager`,
-`I2SDACdevice_manager`, `cameradevicemanager`,
+`motor_driver_tb6612`, `pi_hardware_adapter`, `positional_servo_manager`, `pca9685`,
+`joystick_xy_manager`. The remaining device modules still use
+their own detection and some top-level optional imports
+(`I2SDACdevice_manager`, `cameradevicemanager`,
 `motion_detector`, `linux_ble_gatt`); they move to `_platform` in Step 5.
 
 - Detection happens once; modules import the constants.
@@ -254,7 +255,7 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `positional_servo_manager.py` | `PositionalServoManager` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); GPIO or PCA9685 channel; `docs/devices/positional_servo_manager.md` |
 | `pca9685.py` | `PCA9685` | ✓ | ✓ | DM | new in Step 5 (ADR-006); native driver, `i2c` extra; `docs/devices/pca9685.md` |
 | `solenoid_valve.py` | `SolenoidValve` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/solenoid_valve.md` |
-| `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | partial | DM | Linux needs external ADC |
+| `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); axes are analog inputs (ADR-007), external ADC on Linux; `docs/devices/joystick_xy_manager.md` |
 | `ads1x15.py` | `ADS1x15` | ? | ✓ | DM | smbus2 on Linux |
 | `power_monitor.py` | `PowerMonitor` | ✓ | ✓ | DM | uses ADS1x15 on Linux |
 | `pi_hardware_adapter.py` | `PiHardwareAdapter` | ✓ | ✓ | DM | duplicate `hardware.py` removed |

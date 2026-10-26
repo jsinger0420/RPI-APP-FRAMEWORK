@@ -98,7 +98,6 @@ convention = "google"
 "src/rpi_app_framework/ads1x15.py" = ["D"]
 "src/rpi_app_framework/ble_manager.py" = ["D"]
 "src/rpi_app_framework/cameradevicemanager.py" = ["D"]
-"src/rpi_app_framework/joystick_xy_manager.py" = ["D"]
 "src/rpi_app_framework/linux_ble_gatt.py" = ["D", "F401"]
 "src/rpi_app_framework/microdot_manager.py" = ["D", "B904"]
 "src/rpi_app_framework/motion_detector.py" = ["D", "F401"]

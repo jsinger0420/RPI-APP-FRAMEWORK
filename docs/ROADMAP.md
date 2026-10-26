@@ -84,8 +84,8 @@ conversation.
 - Carried to Step 5 — import-smoke strict xfails (delete the entry in
   `KNOWN_FAILURES` when fixed): plain PC: `I2SDACdevice_manager` (alsaaudio),
   `ble_manager` + `linux_ble_gatt` (dbus), `cameradevicemanager` (picamera2),
-  `joystick_xy_manager` (gpiozero), `motion_detector` (cv2/numpy),
-  `positional_servo_manager` (gpiozero.pins.pigpio). Pico: `ble_manager` (checks
+  `motion_detector` (cv2/numpy). (`joystick_xy_manager` and
+  `positional_servo_manager` fixed in Step 5.) Pico: `ble_manager` (checks
   `sys.implementation` itself, so it takes the Linux path), plus the Linux-only
   camera/vision/`linux_ble_gatt` modules. Ruff `per-file-ignores` in
   `pyproject.toml` list the modules still missing Google docstrings.
@@ -112,8 +112,12 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       `tests/test_positional_servo_manager.py`, `tests/test_pca9685.py`, device docs
       for both. Native PCA9685 driver (no Adafruit), works on Pico and Pi; servos use
       `pca=board, channel=n`; pigpio factory dropped (Pi 5); new `i2c` extra.
-- ☐ `JoystickXYManager`
-- ☐ `ADS1x15` + `PowerMonitor`
+- ◐ `JoystickXYManager` · `feature/joystick-xy` — `tests/test_joystick_xy_manager.py`,
+      `docs/devices/joystick_xy_manager.md`. Axes are analog inputs (ADR-007): Pico
+      ADC pins or any object with `read_u16()`; works on Linux with an external ADC.
+- ☐ `ADS1x15` + `PowerMonitor` — per ADR-007: add `ADS1x15.channel(n)` returning an
+      analog input (`read_u16()`, 0-65535), make `PowerMonitor` take analog inputs, and
+      add a joystick-on-ADS1115 test to the hardware plan.
 - ☐ `PiHardwareAdapter`
 - ☐ `WiFiManager`
 - ☐ `MicrodotManager`
@@ -157,3 +161,4 @@ See `docs/decisions/`.
 | 004 | Device registry and uniform `close()` | Accepted |
 | 005 | GPIO pin numbers checked by `_platform.gpio_pin()` | Accepted (on branch) |
 | 006 | Native `PCA9685` device; servos use a board + channel | Accepted (on branch) |
+| 007 | Analog inputs are Pico ADC pins or objects with `read_u16()` | Accepted (on branch) |

@@ -39,7 +39,6 @@ KNOWN_FAILURES = {
         "I2SDACdevice_manager": "imports alsaaudio at top level",
         "ble_manager": "imports linux_ble_gatt (dbus) at top level",
         "cameradevicemanager": "imports picamera2 at top level",
-        "joystick_xy_manager": "imports gpiozero at top level",
         "linux_ble_gatt": "imports dbus at top level",
         "motion_detector": "imports cv2/numpy at top level",
     },
