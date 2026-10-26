@@ -19,14 +19,17 @@ contains only its own commit once the one before is merged. Merge them in order.
 |---|---|---|---|---|
 | 1 | `feature/led-simple` | `main` | ☐ | ☐ |
 | 2 | `feature/solenoid-valve` | `feature/led-simple` | ☐ | ☐ |
+| 3 | `feature/motor-driver-tb6612` | `feature/solenoid-valve` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
 git push -u origin feature/solenoid-valve
+git push -u origin feature/motor-driver-tb6612
 ```
 
-Open PR 2 with base `feature/led-simple` (GitHub retargets it to `main` when PR 1 is
-merged), or wait and open it after PR 1 is merged. CI must be green on each.
+Open each PR with the previous branch as its base (GitHub retargets it to `main` when
+the one before is merged), or wait and open each after the previous one is merged.
+CI must be green on each.
 
 ## 2. Earlier steps (core, not device specific)
 
@@ -88,3 +91,55 @@ ValveTest(app_name="ValveTest", loop_interval=0.5).start()
 - ☐ Pi 4 (BCM 18) and Pi 5: same sequence; Ctrl-C while open → valve closes.
 - ☐ Any board: unplug/reset the controller while the 12 V supply stays on → valve
   stays closed (gate pull-down).
+
+## 5. MotorDriverTB6612FNG — `feature/motor-driver-tb6612`
+
+Wiring: `docs/devices/motor_driver_tb6612.md` (VCC 3.3 V, separate VM supply, STBY
+pull-down). Prop the robot up so the wheels spin freely. Test program (Pico pins
+shown; on a Pi use the BCM numbers from the device doc):
+
+```python
+from rpi_app_framework import RPIApp
+from rpi_app_framework.motor_driver_tb6612 import MotorDriverTB6612FNG
+
+PINS = dict(pwma_pin=0, ain1_pin=1, ain2_pin=2,
+            pwmb_pin=3, bin1_pin=4, bin2_pin=5, stby_pin=6)
+STEPS = [
+    ("forward", "left", 60), ("forward", "right", 60),
+    ("reverse", "left", 60), ("reverse", "right", 60),
+    ("brake", "left", None), ("stop_motor", "right", None),
+]
+
+
+class MotorTest(RPIApp):
+    def setup(self):
+        self.motors = MotorDriverTB6612FNG(
+            "drive", motor_a_name="left", motor_b_name="right", app=self, **PINS)
+        self.motors.enable()
+        self.step = 0
+
+    def loop(self):
+        if self.step == len(STEPS):
+            self.motors.forward("left", 100)     # leave running, then press Stop
+            self.motors.forward("right", 100)
+            return
+        action, motor, speed = STEPS[self.step]
+        method = getattr(self.motors, action)
+        method(motor) if speed is None else method(motor, speed)
+        self.step += 1
+
+
+MotorTest(app_name="MotorTest", loop_interval=2.0).start()
+```
+
+- ☐ Pico 2 W: no twitch at start; each step every 2 s matches the log line
+  (left/right turn the expected way — swap AO1/AO2 if not); `brake` stops the left
+  wheel noticeably faster than `stop_motor` stops the right.
+- ☐ Pico 2 W: Thonny Stop while both run at 100 % → both stop at once; log ends with
+  `[drive] closed` then "stopped".
+- ☐ Pico 2 W: `increase_speed`/`decrease_speed` from the REPL change speed audibly.
+- ☐ Pi 4 and Pi 5 (BCM pins): same sequence; Ctrl-C → both stop. Note whether the
+  1000 Hz software PWM sounds/behaves acceptably on the Pi 5.
+- ☐ Pi: run the program twice in a row (pins released, no "pin in use").
+- ☐ Any board: reset the controller while VM is powered → motors stay still (STBY
+  pull-down).
