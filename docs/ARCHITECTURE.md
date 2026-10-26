@@ -37,7 +37,7 @@ helpers or lazy imports.
 
 ## 2. RPIApp — application lifecycle
 
-### Current contract (v0.1.5)
+### Contract before v0.2.0 (v0.1.5, for reference)
 
 ```python
 app = MyApp(app_name="MyApp", max_log_files=10, enable_file_logging=True)
@@ -59,7 +59,7 @@ Logging: `log(message)` prints and appends to `LOGFILES/<app_name>/log_<timestam
 keeping the newest `max_log_files`. On a Pico with no RTC set (year < 2022) the file name
 uses a random hex id and lines use `TICKS-<ms>`.
 
-### Known problems
+### Problems fixed in v0.2.0 Step 3
 
 - `stop()` can run more than once (user code calling it, plus `start()`), and "stopped"
   is logged twice.
@@ -67,7 +67,40 @@ uses a random hex id and lines use `TICKS-<ms>`.
 - Device cleanup is entirely manual — each app must remember to turn off motors,
   close valves, release I2C, etc.
 
-### Target contract (v0.2.0)
+### Current contract (v0.2.0, done in Step 3)
+
+```python
+class MyApp(RPIApp):
+    def setup(self):                       # create devices with app=self
+        self.pump = Pump("pump", pin=15, app=self)
+        # any object with a close() that makes it safe (e.g. CameraDeviceManager).
+        # NOT SolenoidValve/PositionalServoManager/PiHardwareAdapter yet: they have
+        # cleanup(), not close(), until Step 5 - call their cleanup() in teardown().
+        self.cam = self.add_device(CameraDeviceManager("cam"))
+    def loop(self):                        # one tick; return False to end
+        ...
+    def teardown(self):                    # optional; devices still open here
+        ...
+
+MyApp(app_name="MyApp", loop_interval=1.0, max_log_files=10,
+      enable_file_logging=True, log_dir="LOGFILES").start()
+```
+
+- `start()` (once only): `running = True` → `setup()` → `run()` (skipped if setup
+  called `request_stop()`) → `stop()` on normal return, `KeyboardInterrupt`, or any
+  exception; other exceptions are re-raised after `stop()`.
+- Default `run()` calls `loop()` at a fixed rate of `loop_interval` seconds (time spent
+  in `loop()` is subtracted; overruns start the next call at once) until `loop()`
+  returns `False`, `request_stop()` is called, or `running` is cleared.
+- `stop()` is idempotent: `running = False` → log "stopping" → `teardown()` → close
+  registered devices newest first → log "stopped" → close log file. Each step's errors
+  (and interrupts) are logged; later steps still run.
+- Registry: `add_device(dev)` (returns `dev`; any object with `close()`),
+  `remove_device(dev)`, `devices` (tuple). `DeviceManager(app=self)` registers itself.
+- `log()` delegates to `self.logger`, a `Logger` (`logger.py`): console + rotating
+  files; after close it prints only.
+
+The bullets below are the original Step 3 plan, kept for history.
 
 - **Idempotent `stop()`**: a guard flag makes second calls no-ops.
 - **Device registry**: `self.add_device(dev)` (or automatic registration when a
@@ -86,7 +119,7 @@ uses a random hex id and lines use `TICKS-<ms>`.
 
 ## 3. DeviceManager — hardware abstraction
 
-### Current contract (v0.1.5)
+### Contract before v0.2.0 (v0.1.5, for reference)
 
 ```python
 class DeviceManager:
@@ -103,7 +136,7 @@ There is no common cleanup method. Subclasses use `cleanup()`, `close()`,
 
 `CameraDeviceManager` and `MotionDetector` do not subclass `DeviceManager`.
 
-### Target contract (v0.2.0)
+### Contract (v0.2.0; base class done in Step 3, subclasses in Step 5)
 
 ```python
 class DeviceManager:
@@ -111,9 +144,14 @@ class DeviceManager:
     name                # unchanged validation
     is_open             # bool
     close()             # release hardware; idempotent; safe to call from any state
-    __enter__/__exit__  # CPython convenience: "with LEDSimple(...) as led:"
+    __enter__/__exit__  # "with LEDSimple(...) as led:" (works on MicroPython too)
+    _require_open()     # raise RuntimeError if closed; call in hardware methods
     _log(message)
 ```
+
+`app=` registers the device and, if `log_func` is None, uses `app.log`. An explicit
+`log_func` wins. Subclass `close()`: return early if `not self.is_open`, make hardware
+safe, call `super().close()` last (which unregisters it from the app).
 
 Constructor rule for every subclass: **`name` is the first parameter**, then
 hardware parameters (pins, bus, address), then options, then `log_func` and `app` as

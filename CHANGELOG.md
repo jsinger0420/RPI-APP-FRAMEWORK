@@ -20,6 +20,17 @@ All notable changes to this project are documented here. Format based on
   with a helpful error (`require()`), and `ticks_ms()`/`ticks_diff()` (ADR-003).
 - `gpio` extra: `pip install rpi-app-framework[gpio]` installs gpiozero.
 - `PiHardwareAdapter.board`: short board id such as `"pico2_w"` or `"pi5"`.
+- Device lifecycle (ADR-004): `DeviceManager(app=...)` registers the device with the
+  app and logs through `app.log`; `close()` (idempotent), `is_open`,
+  `_require_open()`, and `with` support.
+- `RPIApp` device registry: `add_device()` (returns the device; accepts any object
+  with `close()`), `remove_device()`, `devices`. `stop()` closes registered devices
+  newest first; one failing device does not block the others.
+- `RPIApp.teardown()` hook for app cleanup; override it instead of `stop()`.
+- `RPIApp.loop()` + `loop_interval` (fixed-rate main loop) and `request_stop()`.
+- `RPIApp(log_dir=...)` and the `Logger` class (`rpi_app_framework.logger`), now
+  behind `RPIApp.log()` and available as `app.logger`.
+- First unit tests (`tests/`), run with `pytest`.
 
 ### Changed
 - **BREAKING:** GPIO on Raspberry Pi OS now uses gpiozero instead of `RPi.GPIO` in
@@ -39,6 +50,12 @@ All notable changes to this project are documented here. Format based on
 - `PiHardwareAdapter.model` on the Pico reports the firmware's board string (e.g.
   "Raspberry Pi Pico W with RP2040") instead of always "Raspberry Pi Pico 2 W".
 - `__version__` is read from the installed package metadata (was a stale "0.1.2").
+- **BREAKING:** `RPIApp.stop()` is idempotent and now runs `teardown()` and closes
+  registered devices. Apps that override `stop()` still work if they call
+  `super().stop()`; move that code to `teardown()`.
+- **BREAKING:** `RPIApp.start()` raises `RuntimeError` if called a second time.
+- `RPIApp` log files: `max_log_files` now counts the new file (was one extra), and
+  `max_log_files < 1` raises `ValueError`.
 
 ### Removed
 - **BREAKING:** module-level `MICROPYTHON` flags in `rpi_app`, `device_manager`,
@@ -55,6 +72,8 @@ All notable changes to this project are documented here. Format based on
 - Old watervalve example apps (`examples/watervalveapp-v1/v2/v3.py`).
 
 ### Fixed
+- `RPIApp` logged "stopped" twice, the second time after the log file was closed.
+- `RPIApp.stop()` called twice (by user code and by `start()`) ran cleanup twice.
 - `src/rpi_app_framework.egg-info/` is no longer tracked in git (it is a build
   artifact and was already listed in `.gitignore`).
 - `import rpi_app_framework` no longer requires `RPi.GPIO`/gpiozero, so it works on

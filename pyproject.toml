@@ -60,3 +60,7 @@ packages = {find = {where = ["src"]}}
 
 [tool.setuptools.package-data]
 "rpi_app_framework" = ["*.txt", "*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
