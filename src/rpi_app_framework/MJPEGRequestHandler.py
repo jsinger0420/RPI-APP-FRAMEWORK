@@ -18,10 +18,7 @@ class _MJPEGRequestHandler(BaseHTTPRequestHandler):
             return
 
         self.send_response(200)
-        self.send_header(
-            "Content-Type",
-            "multipart/x-mixed-replace; boundary=frame"
-        )
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
         self.end_headers()
 
         try:
@@ -53,7 +50,9 @@ class MJPEGStreamingManager(DeviceManager):
     - Use CameraDeviceManager for frame capture
     """
 
-    def __init__(self, camera_manager, host="0.0.0.0", port=8080, name=None, log_func=None):
+    def __init__(
+        self, camera_manager, host="0.0.0.0", port=8080, name=None, log_func=None
+    ):
         """
         Initialize the MJPEG streaming manager.
 
@@ -105,8 +104,7 @@ class MJPEGStreamingManager(DeviceManager):
 
         self._running = True
         self._thread = threading.Thread(
-            target=self._http_server.serve_forever,
-            daemon=True
+            target=self._http_server.serve_forever, daemon=True
         )
         self._thread.start()
 

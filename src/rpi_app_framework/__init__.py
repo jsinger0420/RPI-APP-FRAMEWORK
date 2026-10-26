@@ -22,7 +22,8 @@ from .rpi_app import RPIApp
 _FALLBACK_VERSION = "0.1.5"
 
 try:
-    from importlib.metadata import PackageNotFoundError, version as _version
+    from importlib.metadata import PackageNotFoundError
+    from importlib.metadata import version as _version
 
     try:
         __version__ = _version("rpi-app-framework")

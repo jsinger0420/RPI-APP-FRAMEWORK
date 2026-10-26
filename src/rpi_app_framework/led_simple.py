@@ -52,8 +52,9 @@ class LEDSimple(DeviceManager):
                 self.led_pin = int(pin)
             except (TypeError, ValueError):
                 raise ValueError(
-                    "On Raspberry Pi OS the LED pin must be a BCM GPIO number, got {!r}".format(pin)
-                )
+                    "On Raspberry Pi OS the LED pin must be a BCM GPIO number, "
+                    "got {!r}".format(pin)
+                ) from None
             self.led = gpiozero.LED(self.led_pin)
         self.off()
 

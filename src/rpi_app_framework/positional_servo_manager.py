@@ -11,21 +11,26 @@ Compatible with Raspberry Pi Pico (MicroPython) and full Raspberry Pi boards.
 
 # Platform & import detection
 try:
-    from machine import Pin, PWM, I2C
+    from machine import I2C, PWM, Pin
+
     MICROPYTHON = True
 except ImportError:
     from gpiozero import Servo
     from gpiozero.pins.pigpio import PiGPIOFactory
+
     MICROPYTHON = False
 
 try:
     from adafruit_pca9685 import PCA9685
+
     HAS_ADAFRUIT_PCA9685 = True
 except ImportError:
     HAS_ADAFRUIT_PCA9685 = False
 
-from .device_manager import DeviceManager
 import time
+
+from .device_manager import DeviceManager
+
 
 class PositionalServoManager(DeviceManager):
     """
@@ -45,14 +50,14 @@ class PositionalServoManager(DeviceManager):
 
     DEFAULT_MIN_PULSE_US = 500
     DEFAULT_MAX_PULSE_US = 2500
-    DEFAULT_NEUTRAL_US   = 1500
+    DEFAULT_NEUTRAL_US = 1500
     DEFAULT_FREQUENCY_HZ = 50
 
     def __init__(
         self,
-        control_pin=None,               # GPIO pin for direct mode (optional)
-        i2c=None,                       # I2C bus object for PCA9685 mode
-        channel=None,                   # PCA9685 channel (0–15) if using I2C
+        control_pin=None,  # GPIO pin for direct mode (optional)
+        i2c=None,  # I2C bus object for PCA9685 mode
+        channel=None,  # PCA9685 channel (0–15) if using I2C
         name="Positional Servo",
         min_pulse_us=DEFAULT_MIN_PULSE_US,
         max_pulse_us=DEFAULT_MAX_PULSE_US,
@@ -60,7 +65,7 @@ class PositionalServoManager(DeviceManager):
         angle_range=(0, 180),
         smooth_speed_deg_per_sec=120,
         idle_timeout_sec=None,
-        log_func=None
+        log_func=None,
     ):
         """
         Initialize positional servo controller.
@@ -91,8 +96,10 @@ class PositionalServoManager(DeviceManager):
         # Determine connection mode
         if i2c is not None and channel is not None:
             if not HAS_ADAFRUIT_PCA9685:
-                raise ImportError("PCA9685 mode requires 'adafruit_pca9685' library. "
-                                  "Install with: pip install adafruit-circuitpython-pca9685")
+                raise ImportError(
+                    "PCA9685 mode requires 'adafruit_pca9685' library. "
+                    "Install with: pip install adafruit-circuitpython-pca9685"
+                )
             self.mode = "pca9685"
             self.i2c = i2c
             self.channel = channel
@@ -113,14 +120,16 @@ class PositionalServoManager(DeviceManager):
                     control_pin,
                     min_pulse_width=min_pulse_us / 1_000_000,
                     max_pulse_width=max_pulse_us / 1_000_000,
-                    pin_factory=factory
+                    pin_factory=factory,
                 )
                 self._servo.mid()
 
             self._log(f"Direct GPIO mode initialized on pin {control_pin}")
         else:
-            raise ValueError("Must provide either control_pin (direct GPIO) "
-                             "or i2c + channel (PCA9685)")
+            raise ValueError(
+                "Must provide either control_pin (direct GPIO) "
+                "or i2c + channel (PCA9685)"
+            )
 
     def _disable_pwm(self):
         """Turn off PWM signal (saves power on Pico)."""

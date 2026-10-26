@@ -6,6 +6,7 @@
 
 try:
     from machine import I2S, Pin
+
     MICROPYTHON = True
 except ImportError:
     MICROPYTHON = False
@@ -37,15 +38,17 @@ class I2SDACDeviceManager(DeviceManager):
     - periodsize: ALSA period size (Linux only, queried dynamically)
     """
 
-    def __init__(self,
-                 name=None,
-                 log_func=None,
-                 sck_pin=None,
-                 ws_pin=None,
-                 sd_pin=None,
-                 sample_rate=22050,
-                 bits=16,
-                 alsa_device="default"):
+    def __init__(
+        self,
+        name=None,
+        log_func=None,
+        sck_pin=None,
+        ws_pin=None,
+        sd_pin=None,
+        sample_rate=22050,
+        bits=16,
+        alsa_device="default",
+    ):
         super().__init__(name=name, log_func=log_func)
 
         self.sample_rate = sample_rate
@@ -89,7 +92,7 @@ class I2SDACDeviceManager(DeviceManager):
             self.pcm = alsaaudio.PCM(
                 type=alsaaudio.PCM_PLAYBACK,
                 mode=alsaaudio.PCM_NORMAL,
-                device=self.alsa_device
+                device=self.alsa_device,
             )
             self.pcm.setrate(self.sample_rate)
             self.pcm.setformat(alsaaudio.PCM_FORMAT_S16_LE)

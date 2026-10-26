@@ -2,8 +2,11 @@
 """
 Microdot Manager - Cross-platform with original conditional imports preserved
 """
-from .device_manager import DeviceManager
+
 import asyncio
+
+from .device_manager import DeviceManager
+
 
 class MicrodotManager(DeviceManager):
     """
@@ -26,6 +29,7 @@ class MicrodotManager(DeviceManager):
         try:
             # Pico (MicroPython) - prefers asyncio version
             from microdot_asyncio import Microdot
+
             self.app = Microdot()
             self._is_asyncio = True
             self._log("Loaded microdot_asyncio (Pico)")
@@ -33,6 +37,7 @@ class MicrodotManager(DeviceManager):
             # Full Raspberry Pi or fallback
             try:
                 from microdot import Microdot
+
                 self.app = Microdot()
                 self._is_asyncio = False
                 self._log("Loaded standard microdot")
@@ -43,7 +48,7 @@ class MicrodotManager(DeviceManager):
     def add_route(self, path, handler, methods=None):
         """Add a route to the web server"""
         if methods is None:
-            methods = ['GET']
+            methods = ["GET"]
         if self.app is None:
             self.setup()
         self.app.route(path, methods=methods)(handler)
@@ -65,7 +70,9 @@ class MicrodotManager(DeviceManager):
                 self.app.run(port=self.port, debug=False)
         except Exception as e:
             err_str = str(e).upper()
-            if any(x in err_str for x in ["ECONNABORTED", "103", "CANCELLED", "KEYBOARD"]):
+            if any(
+                x in err_str for x in ["ECONNABORTED", "103", "CANCELLED", "KEYBOARD"]
+            ):
                 self._log("Server stopped normally")
             else:
                 self._log(f"Server error: {e}")

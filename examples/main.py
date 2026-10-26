@@ -1,6 +1,9 @@
+import time
+
 from rpi_app_framework import RPIApp
 from rpi_app_framework.led_simple import LEDSimple
-import time
+
+
 class MyApp(RPIApp):
     """
     Sample application class inheriting from RPIApp.
@@ -36,6 +39,7 @@ class MyApp(RPIApp):
         while self.running:
             self.led.blink(duration=0.5, count=1)
             time.sleep(1)  # Pause between blinks
+
 
 if __name__ == "__main__":
     app = MyApp(max_log_files=10)

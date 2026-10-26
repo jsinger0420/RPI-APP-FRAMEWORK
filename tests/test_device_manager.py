@@ -80,7 +80,7 @@ def test_context_manager_closes_on_exception():
     with pytest.raises(ZeroDivisionError):
         with FakeOutput("out") as dev:
             dev.on()
-            1 / 0
+            _ = 1 / 0
     assert not dev.is_open
     assert dev.output_on is False
 

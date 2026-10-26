@@ -176,8 +176,9 @@ def require(module_name, extra=None, feature=None):
     except ImportError as e:
         who = feature or PACKAGE_NAME
         if IS_MICROPYTHON:
-            msg = "{} needs '{}', which is not available in this MicroPython firmware".format(
-                who, module_name
+            msg = (
+                "{} needs '{}', which is not available in this MicroPython "
+                "firmware".format(who, module_name)
             )
         else:
             msg = "{} needs '{}'.".format(who, module_name)

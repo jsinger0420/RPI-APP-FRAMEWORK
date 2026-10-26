@@ -101,7 +101,7 @@ class PiHardwareAdapter(DeviceManager):
                 temp = 27 - (voltage - 0.706) / 0.001721
                 return round(temp, 2)
             except Exception as e:
-                raise RuntimeError(f"Pico temperature sensor error: {e}")
+                raise RuntimeError(f"Pico temperature sensor error: {e}") from e
 
         try:
             import re
@@ -117,8 +117,8 @@ class PiHardwareAdapter(DeviceManager):
         try:
             with open("/sys/class/thermal/thermal_zone0/temp") as f:
                 return round(int(f.read().strip()) / 1000.0, 2)
-        except Exception:
-            raise RuntimeError("CPU temperature unavailable on Raspberry Pi")
+        except Exception as e:
+            raise RuntimeError("CPU temperature unavailable on Raspberry Pi") from e
 
     @property
     def cpu_temp(self):
@@ -228,7 +228,9 @@ class PiHardwareAdapter(DeviceManager):
             p.duty_u16(int(duty * 655.35))  # 0-100 % -> 0-65535
             return p
 
-        pwm_obj = self._track(self._gpiozero().PWMOutputDevice(int(pin), frequency=freq))
+        pwm_obj = self._track(
+            self._gpiozero().PWMOutputDevice(int(pin), frequency=freq)
+        )
         pwm_obj.value = duty / 100.0
         return pwm_obj
 

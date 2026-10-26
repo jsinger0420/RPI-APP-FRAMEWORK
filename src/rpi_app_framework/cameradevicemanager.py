@@ -1,6 +1,7 @@
 import os
-import time
 import subprocess
+import time
+
 from picamera2 import Picamera2, Preview
 from picamera2.encoders import H264Encoder
 from picamera2.outputs import FileOutput
@@ -17,9 +18,13 @@ class CameraDeviceManager:
     - Logging
     """
 
-    def __init__(self, name="camera", resolution=(1280, 720),
-                 photo_folder="/home/pi/photos",
-                 video_folder="/home/pi/videos"):
+    def __init__(
+        self,
+        name="camera",
+        resolution=(1280, 720),
+        photo_folder="/home/pi/photos",
+        video_folder="/home/pi/videos",
+    ):
         self.name = name
         self.resolution = resolution
         self.photo_folder = photo_folder
@@ -35,7 +40,9 @@ class CameraDeviceManager:
         os.makedirs(self.photo_folder, exist_ok=True)
         os.makedirs(self.video_folder, exist_ok=True)
 
-        self._log(f"CameraDeviceManager initialized. Photos → {self.photo_folder}, Videos → {self.video_folder}")
+        self._log(
+            f"CameraDeviceManager initialized. Photos → {self.photo_folder}, Videos → {self.video_folder}"
+        )
 
     # ----------------------------------------------------------------------
     # Logging
@@ -65,9 +72,7 @@ class CameraDeviceManager:
         self._log("Initializing Picamera2...")
         self.camera = Picamera2()
 
-        config = self.camera.create_video_configuration(
-            main={"size": self.resolution}
-        )
+        config = self.camera.create_video_configuration(main={"size": self.resolution})
         self.camera.configure(config)
 
         self._log("Picamera2 initialized and configured for video.")
@@ -100,8 +105,7 @@ class CameraDeviceManager:
             self.camera.stop_preview()
             self.preview_active = False
             self._log("Preview stopped.")
-    
-    
+
     def get_jpeg_frame(self):
         """
         Return a JPEG-encoded frame for MJPEG streaming.
@@ -117,6 +121,7 @@ class CameraDeviceManager:
             frame = frame[:, :, :3]
 
         import cv2
+
         ret, jpeg = cv2.imencode(".jpg", frame)
         return jpeg.tobytes()
 
@@ -142,16 +147,16 @@ class CameraDeviceManager:
 
         # If Picamera2 gives RGBA (XBGR8888), strip alpha channel
         if frame.shape[2] == 4:
-            frame = frame[:, :, :3]   # convert RGBA → RGB
+            frame = frame[:, :, :3]  # convert RGBA → RGB
 
         # Save using Pillow
         from PIL import Image
+
         img = Image.fromarray(frame, mode="RGB")
         img.save(output_path, format="JPEG")
 
         self._log(f"Image saved to {output_path}")
         return output_path
-
 
     # ----------------------------------------------------------------------
     # Frame Capture for OpenCV
@@ -194,10 +199,7 @@ class CameraDeviceManager:
         self._log(f"Starting H.264 recording to {self._temp_h264_path}...")
 
         encoder = H264Encoder(bitrate=bitrate)
-        self.camera.start_recording(
-            encoder,
-            FileOutput(self._temp_h264_path)
-        )
+        self.camera.start_recording(encoder, FileOutput(self._temp_h264_path))
 
         self.recording_active = True
         self._current_mp4_path = output_mp4_path
@@ -223,8 +225,7 @@ class CameraDeviceManager:
         self._log(f"Muxing {self._temp_h264_path} → {output_mp4_path}...")
 
         subprocess.run(
-            ["MP4Box", "-add", self._temp_h264_path, output_mp4_path],
-            check=True
+            ["MP4Box", "-add", self._temp_h264_path, output_mp4_path], check=True
         )
 
         self._log(f"MP4 file created: {output_mp4_path}")

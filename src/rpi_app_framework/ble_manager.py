@@ -15,6 +15,7 @@ Features:
 """
 
 import sys
+
 from .device_manager import DeviceManager
 
 MICROPYTHON = sys.implementation.name == "micropython"
@@ -22,9 +23,9 @@ MICROPYTHON = sys.implementation.name == "micropython"
 if MICROPYTHON:
     import bluetooth
 
-    _IRQ_CENTRAL_CONNECT    = getattr(bluetooth, "IRQ_CENTRAL_CONNECT", 1)
+    _IRQ_CENTRAL_CONNECT = getattr(bluetooth, "IRQ_CENTRAL_CONNECT", 1)
     _IRQ_CENTRAL_DISCONNECT = getattr(bluetooth, "IRQ_CENTRAL_DISCONNECT", 2)
-    _IRQ_GATTS_WRITE        = getattr(bluetooth, "IRQ_GATTS_WRITE", 3)
+    _IRQ_GATTS_WRITE = getattr(bluetooth, "IRQ_GATTS_WRITE", 3)
 
 else:
     from .linux_ble_gatt import LinuxBLEPeripheral
@@ -33,6 +34,7 @@ else:
 # ---------------------------------------------------------------------------
 #  Data Classes
 # ---------------------------------------------------------------------------
+
 
 class BLECharacteristic:
     """
@@ -80,6 +82,7 @@ class BLEService:
 # ---------------------------------------------------------------------------
 #  BLE Manager
 # ---------------------------------------------------------------------------
+
 
 class BLEManager(DeviceManager):
     """

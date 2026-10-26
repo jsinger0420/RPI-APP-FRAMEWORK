@@ -5,6 +5,7 @@
 # ============================================================
 
 import array
+
 from .device_manager import DeviceManager
 
 
@@ -28,9 +29,16 @@ class SoundMixer(DeviceManager):
     - strict: If True, enforce alignment (raise error if mismatch)
     """
 
-    def __init__(self, dac_manager=None, buffer_size=None,
-                 sample_rate=22050, name="SoundMixer",
-                 log_func=None, auto_align=False, strict=False):
+    def __init__(
+        self,
+        dac_manager=None,
+        buffer_size=None,
+        sample_rate=22050,
+        name="SoundMixer",
+        log_func=None,
+        auto_align=False,
+        strict=False,
+    ):
         super().__init__(name=name, log_func=log_func)
         self.sample_rate = sample_rate
         self.streams = []
@@ -38,7 +46,9 @@ class SoundMixer(DeviceManager):
         if auto_align and dac_manager is not None and dac_manager.periodsize:
             # Auto-align to DAC periodsize
             self.buffer_size = dac_manager.periodsize
-            self._log(f"{self.name}: Auto-aligned buffer_size to DAC periodsize={self.buffer_size}")
+            self._log(
+                f"{self.name}: Auto-aligned buffer_size to DAC periodsize={self.buffer_size}"
+            )
         else:
             if buffer_size is None:
                 raise ValueError("buffer_size must be provided when auto_align=False")
@@ -50,7 +60,11 @@ class SoundMixer(DeviceManager):
                     raise ValueError(
                         f"{self.name}: buffer_size={buffer_size} does not match DAC periodsize={dac_manager.periodsize}"
                     )
-            elif dac_manager is not None and dac_manager.periodsize and buffer_size != dac_manager.periodsize:
+            elif (
+                dac_manager is not None
+                and dac_manager.periodsize
+                and buffer_size != dac_manager.periodsize
+            ):
                 self._log(
                     f"Warning: buffer_size={buffer_size} does not match DAC periodsize={dac_manager.periodsize}"
                 )
@@ -65,7 +79,9 @@ class SoundMixer(DeviceManager):
         """Remove a SoundStream object from the mixer."""
         if stream in self.streams:
             self.streams.remove(stream)
-            self._log(f"{self.name}: Removed stream {getattr(stream, 'name', 'unnamed')}")
+            self._log(
+                f"{self.name}: Removed stream {getattr(stream, 'name', 'unnamed')}"
+            )
 
     def mix_buffer(self):
         """

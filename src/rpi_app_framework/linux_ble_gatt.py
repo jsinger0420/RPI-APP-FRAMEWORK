@@ -22,7 +22,6 @@ import dbus.exceptions
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
 
-
 BLUEZ_SERVICE_NAME = "org.bluez"
 GATT_MANAGER_IFACE = "org.bluez.GattManager1"
 LE_ADVERTISING_MANAGER_IFACE = "org.bluez.LEAdvertisingManager1"
@@ -33,6 +32,7 @@ GATT_CHARACTERISTIC_IFACE = "org.bluez.GattCharacteristic1"
 # ------------------------------------------------------------
 #  DBus Base Class
 # ------------------------------------------------------------
+
 
 class DBusObject(dbus.service.Object):
     """
@@ -51,6 +51,7 @@ class DBusObject(dbus.service.Object):
 #  GATT Characteristic
 # ------------------------------------------------------------
 
+
 class Characteristic(DBusObject):
     """
     Represents a GATT characteristic exposed over BlueZ DBus.
@@ -66,7 +67,9 @@ class Characteristic(DBusObject):
     user-provided callbacks.
     """
 
-    def __init__(self, uuid, flags, on_read=None, on_write=None, service=None, index=0, bus=None):
+    def __init__(
+        self, uuid, flags, on_read=None, on_write=None, service=None, index=0, bus=None
+    ):
         self.uuid = uuid
         self.flags = flags
         self.on_read = on_read
@@ -81,8 +84,7 @@ class Characteristic(DBusObject):
     #  DBus Introspection
     # -----------------------------
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature="ss", out_signature="v")
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ss", out_signature="v")
     def Get(self, interface, prop):
         if interface != GATT_CHARACTERISTIC_IFACE:
             raise dbus.exceptions.DBusException("Invalid interface")
@@ -96,13 +98,11 @@ class Characteristic(DBusObject):
 
         raise dbus.exceptions.DBusException("Unknown property")
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature="ssv")
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ssv")
     def Set(self, interface, prop, value):
         raise dbus.exceptions.DBusException("Read-only properties")
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature="s", out_signature="a{sv}")
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="s", out_signature="a{sv}")
     def GetAll(self, interface):
         if interface != GATT_CHARACTERISTIC_IFACE:
             raise dbus.exceptions.DBusException("Invalid interface")
@@ -117,8 +117,9 @@ class Characteristic(DBusObject):
     #  Read / Write Handlers
     # -----------------------------
 
-    @dbus.service.method(GATT_CHARACTERISTIC_IFACE,
-                         in_signature="a{sv}", out_signature="ay")
+    @dbus.service.method(
+        GATT_CHARACTERISTIC_IFACE, in_signature="a{sv}", out_signature="ay"
+    )
     def ReadValue(self, options):
         """
         Called by BlueZ when a BLE client reads this characteristic.
@@ -134,8 +135,7 @@ class Characteristic(DBusObject):
 
         return dbus.ByteArray(b"")
 
-    @dbus.service.method(GATT_CHARACTERISTIC_IFACE,
-                         in_signature="aya{sv}")
+    @dbus.service.method(GATT_CHARACTERISTIC_IFACE, in_signature="aya{sv}")
     def WriteValue(self, value, options):
         """
         Called by BlueZ when a BLE client writes to this characteristic.
@@ -151,6 +151,7 @@ class Characteristic(DBusObject):
 # ------------------------------------------------------------
 #  GATT Service
 # ------------------------------------------------------------
+
 
 class Service(DBusObject):
     """
@@ -187,8 +188,7 @@ class Service(DBusObject):
     #  DBus Introspection
     # -----------------------------
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature="ss", out_signature="v")
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="ss", out_signature="v")
     def Get(self, interface, prop):
         if interface != GATT_SERVICE_IFACE:
             raise dbus.exceptions.DBusException("Invalid interface")
@@ -200,8 +200,7 @@ class Service(DBusObject):
 
         raise dbus.exceptions.DBusException("Unknown property")
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE,
-                         in_signature="s", out_signature="a{sv}")
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature="s", out_signature="a{sv}")
     def GetAll(self, interface):
         if interface != GATT_SERVICE_IFACE:
             raise dbus.exceptions.DBusException("Invalid interface")
@@ -215,6 +214,7 @@ class Service(DBusObject):
 # ------------------------------------------------------------
 #  GATT Application
 # ------------------------------------------------------------
+
 
 class Application(DBusObject):
     """
@@ -251,12 +251,12 @@ class Application(DBusObject):
         """
         manager = dbus.Interface(
             self.bus.get_object(BLUEZ_SERVICE_NAME, "/org/bluez/hci0"),
-            GATT_MANAGER_IFACE
+            GATT_MANAGER_IFACE,
         )
 
         manager.RegisterApplication(
             self.path,
             {},
             reply_handler=lambda: None,
-            error_handler=lambda e: print("GATT registration failed:", e)
+            error_handler=lambda e: print("GATT registration failed:", e),
         )

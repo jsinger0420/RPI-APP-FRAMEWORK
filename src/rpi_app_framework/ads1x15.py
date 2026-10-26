@@ -3,7 +3,7 @@ from .device_manager import DeviceManager
 
 # ADS1x15 register addresses
 _REG_CONVERSION = 0x00
-_REG_CONFIG     = 0x01
+_REG_CONFIG = 0x01
 
 # Config register bits — Multiplexer (MUX): single-ended channels
 _MUX_SINGLE = {
@@ -25,10 +25,10 @@ _PGA = {
 
 # Data rate (samples per second) — ADS1115 defaults
 _DATA_RATE = {
-    8:   0x0000,
-    16:  0x0020,
-    32:  0x0040,
-    64:  0x0060,
+    8: 0x0000,
+    16: 0x0020,
+    32: 0x0040,
+    64: 0x0060,
     128: 0x0080,  # default
     250: 0x00A0,
     475: 0x00C0,
@@ -37,14 +37,14 @@ _DATA_RATE = {
 
 # ADS1015 has 12-bit resolution, ADS1115 has 16-bit
 _RESOLUTION = {
-    "ADS1015": 2048,   # 2^11 (12-bit, sign bit excluded)
+    "ADS1015": 2048,  # 2^11 (12-bit, sign bit excluded)
     "ADS1115": 32768,  # 2^15 (16-bit, sign bit excluded)
 }
 
 # Single-shot mode + start conversion
-_OS_SINGLE    = 0x8000
+_OS_SINGLE = 0x8000
 # Mode: single-shot
-_MODE_SINGLE  = 0x0100
+_MODE_SINGLE = 0x0100
 
 
 class ADS1x15(DeviceManager):
@@ -106,14 +106,16 @@ class ADS1x15(DeviceManager):
         if gain not in _PGA:
             raise ValueError(f"Invalid gain {gain}. Options: {list(_PGA.keys())}")
         if data_rate not in _DATA_RATE:
-            raise ValueError(f"Invalid data_rate {data_rate}. Options: {list(_DATA_RATE.keys())}")
+            raise ValueError(
+                f"Invalid data_rate {data_rate}. Options: {list(_DATA_RATE.keys())}"
+            )
 
-        self._model     = model
-        self._address   = address
-        self._gain      = gain
+        self._model = model
+        self._address = address
+        self._gain = gain
         self._data_rate = data_rate
-        self._i2c_bus   = i2c_bus
-        self._bus       = None  # Lazy-initialized on first use
+        self._i2c_bus = i2c_bus
+        self._bus = None  # Lazy-initialized on first use
 
     def _get_bus(self):
         """
@@ -124,6 +126,7 @@ class ADS1x15(DeviceManager):
             return self._bus
         try:
             from smbus2 import SMBus
+
             self._bus = SMBus(self._i2c_bus)
             self._log(f"I2C bus {self._i2c_bus} opened")
             return self._bus
@@ -151,12 +154,12 @@ class ADS1x15(DeviceManager):
 
             # Build config register value
             config = (
-                _OS_SINGLE                  |  # Start single conversion
-                _MUX_SINGLE[channel]        |  # Input channel
-                _PGA[self._gain]            |  # Gain
-                _MODE_SINGLE                |  # Single-shot mode
-                _DATA_RATE[self._data_rate] |  # Data rate
-                0x0003                         # Comparator disabled
+                _OS_SINGLE  # Start single conversion
+                | _MUX_SINGLE[channel]  # Input channel
+                | _PGA[self._gain]  # Gain
+                | _MODE_SINGLE  # Single-shot mode
+                | _DATA_RATE[self._data_rate]  # Data rate
+                | 0x0003  # Comparator disabled
             )
 
             # Write config register (big-endian)
@@ -219,4 +222,3 @@ class ADS1x15(DeviceManager):
                 self._log("I2C bus closed")
             except Exception as e:
                 self._log(f"Error closing I2C bus: {e}")
-

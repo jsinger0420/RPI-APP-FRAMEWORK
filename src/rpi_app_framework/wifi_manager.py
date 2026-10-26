@@ -17,18 +17,20 @@ Requires wifi_config.json in the root directory with format:
 try:
     import network
     import utime as time_module
+
     MICROPYTHON = True
 except ImportError:
-    import time as time_module
-    import subprocess
     import re
+    import subprocess
+    import time as time_module
+
     MICROPYTHON = False
+
+import json
+import os
 
 from .device_manager import DeviceManager
 
-import os
-
-import json
 
 class WiFiManager(DeviceManager):
     """
@@ -55,10 +57,12 @@ class WiFiManager(DeviceManager):
         try:
             # MicroPython-friendly file check
             try:
-                with open(self.CONFIG_FILE, 'r') as f:
+                with open(self.CONFIG_FILE, "r") as f:
                     config = json.load(f)
             except OSError:
-                raise FileNotFoundError(f"WiFi config file not found: {self.CONFIG_FILE}")
+                raise FileNotFoundError(
+                    f"WiFi config file not found: {self.CONFIG_FILE}"
+                )
 
             self._log(f"Loaded WiFi config from {self.CONFIG_FILE}")
             return config
@@ -71,8 +75,14 @@ class WiFiManager(DeviceManager):
         if not isinstance(self.networks, dict) or not self.networks:
             raise ValueError("WiFi config must be a non-empty dict of networks")
         for loc, data in self.networks.items():
-            if not isinstance(data, dict) or 'ssid' not in data or 'password' not in data:
-                raise ValueError(f"Invalid config for location '{loc}': missing ssid or password")
+            if (
+                not isinstance(data, dict)
+                or "ssid" not in data
+                or "password" not in data
+            ):
+                raise ValueError(
+                    f"Invalid config for location '{loc}': missing ssid or password"
+                )
         self._log(f"Validated {len(self.networks)} network locations")
 
     def connect(self, location):
@@ -85,8 +95,8 @@ class WiFiManager(DeviceManager):
 
         self.current_location = location
         details = self.networks[location]
-        ssid = details['ssid']
-        password = details['password']
+        ssid = details["ssid"]
+        password = details["password"]
 
         if MICROPYTHON:
             self._connect_pico(ssid, password)
@@ -106,7 +116,10 @@ class WiFiManager(DeviceManager):
                 timeout = 12  # seconds
                 start = time_module.ticks_ms()
                 while not wlan.isconnected():
-                    if time_module.ticks_diff(time_module.ticks_ms(), start) > timeout * 1000:
+                    if (
+                        time_module.ticks_diff(time_module.ticks_ms(), start)
+                        > timeout * 1000
+                    ):
                         raise TimeoutError(f"Connection timeout for {ssid}")
                     time_module.sleep_ms(500)
 
@@ -121,12 +134,16 @@ class WiFiManager(DeviceManager):
         self._log(f"[RPi OS] Connecting to {ssid} via nmcli...")
         try:
             # First try to bring down any existing connection with same SSID
-            subprocess.run(["nmcli", "con", "down", ssid], check=False, capture_output=True)
+            subprocess.run(
+                ["nmcli", "con", "down", ssid], check=False, capture_output=True
+            )
 
             # Connect (creates connection if it doesn't exist)
             result = subprocess.run(
                 ["nmcli", "dev", "wifi", "connect", ssid, "password", password],
-                capture_output=True, text=True, timeout=30
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
             if result.returncode != 0:
@@ -153,9 +170,11 @@ class WiFiManager(DeviceManager):
         try:
             result = subprocess.run(
                 ["ip", "-4", "route", "get", "8.8.8.8"],
-                capture_output=True, text=True, check=True
+                capture_output=True,
+                text=True,
+                check=True,
             )
-            match = re.search(r'src (\S+)', result.stdout)
+            match = re.search(r"src (\S+)", result.stdout)
             return match.group(1) if match else None
         except:
             return None
@@ -186,7 +205,7 @@ class WiFiManager(DeviceManager):
                 pass
         else:
             if self.current_location:
-                ssid = self.networks[self.current_location]['ssid']
+                ssid = self.networks[self.current_location]["ssid"]
                 try:
                     subprocess.run(["nmcli", "con", "down", ssid], check=False)
                     self._log(f"Disconnected from {ssid} (nmcli)")
