@@ -28,6 +28,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 9 | `feature/wifi-manager` | `feature/pi-hardware-adapter` | ☐ | ☐ |
 | 10 | `feature/microdot-manager` | `feature/wifi-manager` | ☐ | ☐ |
 | 11 | `feature/ble-manager` | `feature/microdot-manager` | ☐ | ☐ |
+| 12 | `chore/remove-motion-detector` | `feature/ble-manager` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -41,8 +42,10 @@ git push -u origin feature/pi-hardware-adapter
 git push -u origin feature/wifi-manager
 git push -u origin feature/microdot-manager
 git push -u origin feature/ble-manager
+git push -u origin chore/remove-motion-detector
 ```
 
+Branch 12 (ADR-011) only removes `MotionDetector`; it has no hardware test.
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
 on the newest branch you have pushed; the device tests below cover it.
 
