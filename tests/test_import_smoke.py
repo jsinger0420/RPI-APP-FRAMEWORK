@@ -36,7 +36,6 @@ MODULES = sorted(
 # module -> reason, per platform. Remove entries as Step 5 fixes them.
 KNOWN_FAILURES = {
     "plain-pc": {
-        "I2SDACdevice_manager": "imports alsaaudio at top level",
         "cameradevicemanager": "imports picamera2 at top level",
     },
     "pico": {

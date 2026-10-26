@@ -38,7 +38,7 @@ _LAZY_EXPORTS = {
     "ADS1x15": "ads1x15",
     "BLEManager": "ble_manager",
     "CameraDeviceManager": "cameradevicemanager",
-    "I2SDACDeviceManager": "I2SDACdevice_manager",
+    "I2SDACDeviceManager": "i2s_dac",
     "JoystickXYManager": "joystick_xy_manager",
     "LEDSimple": "led_simple",
     "MicrodotManager": "microdot_manager",

@@ -29,6 +29,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 10 | `feature/microdot-manager` | `feature/wifi-manager` | ☐ | ☐ |
 | 11 | `feature/ble-manager` | `feature/microdot-manager` | ☐ | ☐ |
 | 12 | `chore/remove-motion-detector` | `feature/ble-manager` | ☐ | ☐ |
+| 13 | `feature/audio` | `chore/remove-motion-detector` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -43,6 +44,7 @@ git push -u origin feature/wifi-manager
 git push -u origin feature/microdot-manager
 git push -u origin feature/ble-manager
 git push -u origin chore/remove-motion-detector
+git push -u origin feature/audio
 ```
 
 Branch 12 (ADR-011) only removes `MotionDetector`; it has no hardware test.
@@ -379,3 +381,21 @@ LightBlue on a phone.
 - ☐ Thonny Stop while connected → phone shows disconnected; board no longer appears in
   scans; log ends with `[ble] closed` then "stopped".
 - ☐ Raspberry Pi: `BLEManager("ble")` raises `NotImplementedError` with the message.
+
+## 13. Audio — `feature/audio`
+
+Wiring: `docs/devices/i2s_dac.md` (MAX98357A + 4-8 ohm speaker). Make two 16-bit mono
+16 kHz WAV files: a short `ding.wav` (< 1 s) and a loopable `rain.wav` (a few s);
+copy them next to the program (Pico: to the board). Pi: add `dtoverlay=max98357a`,
+reboot, `aplay -l`, `pip install -e .[audio]`. Program: the `Doorbell` example in the
+device doc, then a variant that also adds `rain.wav` with `loop=True, volume=0.3`.
+
+- ☐ Pico 2 W: the ding plays once, clean (no clicks/stutter), then silence; Stop →
+  `[speaker] closed`, amp silent.
+- ☐ Pico 2 W: ding + rain together for 30 s without stutter at `loop_interval=0.1`,
+  `buffer_size=1600`. Note how long one `mix()` takes
+  (`ticks_ms` around it) with 1 and 2 streams.
+- ☐ Pico 2 W: `ws_pin` not `sck_pin + 1` → clear `ValueError`.
+- ☐ Pi 4 / Pi 5 (overlay, `alsa_device="default"`): same two programs, no stutter;
+  Ctrl-C → silence; run twice in a row (device released).
+- ☐ A stereo or 8-bit WAV → clear `ValueError` naming the problem.
