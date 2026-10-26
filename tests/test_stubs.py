@@ -178,7 +178,7 @@ def test_solenoid_valve_starts_closed(platform):
     """SolenoidValve de-energizes its pin at init and energizes it on open."""
     from rpi_app_framework.solenoid_valve import SolenoidValve
 
-    valve = SolenoidValve(18, log_func=lambda m: None)
+    valve = SolenoidValve("zone1", control_pin=18, log_func=lambda m: None)
     assert _output_level(platform, 18) == 0
     valve.open_valve()
     assert _output_level(platform, 18) == 1

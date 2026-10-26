@@ -88,8 +88,8 @@ class DeviceManager:
         self.logging_enabled = True
         self._validate_name(name)
         self._name = name or self.__class__.__name__
-        # Named _device_open (not _is_open) so subclasses that already use
-        # _is_open for hardware state, e.g. SolenoidValve, do not clash.
+        # Named _device_open (not _is_open) so a subclass can use _is_open
+        # for its own hardware state without clashing.
         self._device_open = True
         # Owning RPIApp. Private, with no public "app" property, because
         # MicrodotManager uses self.app for its Microdot server.
@@ -146,9 +146,8 @@ class DeviceManager:
     def is_open(self):
         """bool: True from construction until :meth:`close` is called.
 
-        Note:
-            ``SolenoidValve`` still overrides this name with the valve state
-            until it is converted in v0.2.0 Step 5.
+        Subclasses must not override it; name hardware state differently
+        (e.g. ``SolenoidValve.valve_open``).
         """
         return self._device_open
 

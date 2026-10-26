@@ -44,6 +44,7 @@ docs/ARCHITECTURE.md       layers, lifecycle contract, DeviceManager contract, p
 docs/CONVENTIONS.md        code style, docstrings, imports, naming, MicroPython rules
 docs/ROADMAP.md            current release plan and backlog
 docs/RELEASING.md          how to cut a release (tag -> GitHub Actions -> PyPI)
+docs/HARDWARE_TEST_PLAN.md owner's pending pushes/PRs and real-hardware tests (Step 5)
 .github/workflows/         ci.yml (lint, test, build), publish.yml (PyPI on tag)
 docs/decisions/            ADRs: one short file per architectural decision
 docs/devices/<module>.md   per-device spec: hardware, wiring, API, platform support, status
@@ -67,8 +68,10 @@ Check `docs/ROADMAP.md` for what is actually done.
    `ruff check .` and `black --check .`; CI runs all of these on every PR. Note what
    was or was not tested on real hardware in the PR.
 5. **Finish:** update the device doc, `CHANGELOG.md` (Unreleased section), `ROADMAP.md`
-   status, and add an ADR if a design decision was made. These updates are what let the
-   next conversation pick up the context.
+   status, and add an ADR if a design decision was made. In Step 5, also add the branch
+   and the device's hardware checks to `docs/HARDWARE_TEST_PLAN.md`; the owner pushes
+   and tests on real boards from that list. These updates are what let the next
+   conversation pick up the context.
 
 ## Environment notes
 

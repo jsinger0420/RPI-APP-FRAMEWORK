@@ -41,6 +41,10 @@ All notable changes to this project are documented here. Format based on
 - `LEDSimple` follows the device contract (ADR-004): `app=` (logs through the app and
   is turned off when the app stops), `close()` (LED off, pin released on Raspberry Pi
   OS), `with` support, `is_on`, and `pin`. Device doc: `docs/devices/led_simple.md`.
+- `SolenoidValve` follows the device contract (ADR-004): `app=`, `close()` (valve
+  closed, pin released on Raspberry Pi OS) and `with` support. New `open_time_ms`
+  (milliseconds the valve has been open, for watering time limits). Device doc:
+  `docs/devices/solenoid_valve.md`.
 
 ### Changed
 - **BREAKING:** GPIO on Raspberry Pi OS now uses gpiozero instead of `RPi.GPIO` in
@@ -78,10 +82,26 @@ All notable changes to this project are documented here. Format based on
   `duration` or a negative or non-integer `count`.
 - `LEDSimple` log lines are shorter (`"on"`, `"off"`, `"toggled on"`), and `blink()`
   logs one line per call instead of one per on/off.
+- **BREAKING:** `SolenoidValve(name=None, control_pin=None, active_high=True,
+  log_func=None, app=None)`: the name is now the first argument (ADR-002) and
+  `control_pin` is required. Migration: `SolenoidValve(15, "zone1")` becomes
+  `SolenoidValve("zone1", control_pin=15)`; keyword calls are unchanged. The default
+  name is now `"SolenoidValve"` (was `"Solenoid Valve"`).
+- **BREAKING:** `SolenoidValve.is_open` (valve state) is renamed `valve_open`;
+  `is_open` now means "device not closed", as for every device manager.
+- **BREAKING:** `SolenoidValve.pulse(open_duration_ms, close_duration_ms)` is now
+  `pulse(open_ms, close_ms)`. It validates both (`open_ms` > 0, `close_ms` >= 0) and
+  closes the valve even if interrupted during the wait.
+- **BREAKING:** `SolenoidValve` raises `RuntimeError` after `close()`, `ValueError` for
+  a non-bool `active_high`, and on Raspberry Pi OS for pins outside BCM 0-27.
+- `SolenoidValve.open_valve()`/`close_valve()` do nothing when the valve is already in
+  that state. Log lines are shorter (`"valve opened"`, `"valve closed after 1500 ms"`).
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a
   Pico and a Raspberry Pi.
 
 ### Removed
+- **BREAKING:** `SolenoidValve.cleanup()`. Use `close()`, or create the valve with
+  `app=self` so the app closes it.
 - **BREAKING:** module-level `MICROPYTHON` flags in `rpi_app`, `device_manager`,
   `led_simple`, `solenoid_valve`, `motor_driver_tb6612` and `pi_hardware_adapter`.
   Use `from rpi_app_framework._platform import IS_MICROPYTHON`.
@@ -113,6 +133,8 @@ All notable changes to this project are documented here. Format based on
 - `PiHardwareAdapter.digital_in(pull=...)` on the Pico passed the pull setting as
   part of the mode, so the pull resistor was not enabled.
 - `DeviceManager` name validation no longer imports `re` (limited on MicroPython).
+- `SolenoidValve` on the Pico created its pin before setting the closed level, so an
+  `active_high=False` (active-low relay) valve could open for an instant at start-up.
 - `LEDSimple` starts with the pin already low, so the LED no longer flashes for an
   instant at construction.
 

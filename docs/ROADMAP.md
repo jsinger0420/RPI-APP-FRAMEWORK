@@ -58,11 +58,11 @@ conversation.
       (38 tests, CPython); core smoke-tested on the MicroPython unix port.
 - ☐ Verify on a Pico 2 W from Thonny (Stop button → devices closed, log ends with
       "stopped").
-- Carried to Step 5: `SolenoidValve`, `PositionalServoManager`, `PiHardwareAdapter`
+- Carried to Step 5: `PositionalServoManager`, `PiHardwareAdapter`
   still have `cleanup()` not `close()`, so registering them does **not** make them
   safe on stop (call `cleanup()` in `teardown()` until converted).
-  `I2SDACDeviceManager.deinitialize()` → `close()`. `SolenoidValve.is_open` (valve
-  state) shadows the base property — rename to `valve_open`. `LEDSimple` has no
+  `I2SDACDeviceManager.deinitialize()` → `close()`. `SolenoidValve`: `cleanup()` →
+  `close()` and `is_open` → `valve_open` — done in Step 5. `LEDSimple` has no
   `close()` (LED left as is) — done in Step 5. Update `examples/main.py` to
   `teardown()`/`loop()` — done with `LEDSimple`.
 
@@ -92,12 +92,15 @@ conversation.
 
 ### Step 5 — Device managers to the new contract (one conversation per group)
 For each: constructor order (`name` first), `close()`, lazy imports, Google
-docstrings, device doc from `docs/devices/_TEMPLATE.md`, tests.
-- ◐ `LEDSimple` · `feature/led-simple` — code, tests (`tests/test_led_simple.py`,
-      both simulated platforms), `docs/devices/led_simple.md` and `examples/main.py`
-      done. ☐ Verify on hardware: Pico 2 W onboard LED (Thonny Stop → LED off, log
-      ends "stopped"), Pi 4/Pi 5 on BCM 17. Mark ☑ after that.
-- ☐ `SolenoidValve`
+docstrings, device doc from `docs/devices/_TEMPLATE.md`, tests, and its hardware
+checks in `docs/HARDWARE_TEST_PLAN.md`. Branches are stacked (each starts from the
+previous one); the owner pushes and tests them on real boards after Step 5, from
+that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
+- ◐ `LEDSimple` · `feature/led-simple` — `tests/test_led_simple.py`,
+      `docs/devices/led_simple.md`, `examples/main.py`.
+- ◐ `SolenoidValve` · `feature/solenoid-valve` — `tests/test_solenoid_valve.py`,
+      `docs/devices/solenoid_valve.md`. `is_open` → `valve_open`, `cleanup()` →
+      `close()`, `pulse(open_ms, close_ms)`, new `open_time_ms`.
 - ☐ `MotorDriverTB6612FNG` (rename `stop(motor)` → `stop_motor`/`brake`)
 - ☐ `PositionalServoManager`
 - ☐ `JoystickXYManager`
