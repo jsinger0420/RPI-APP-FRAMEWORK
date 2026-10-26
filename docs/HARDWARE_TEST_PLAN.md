@@ -21,12 +21,14 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 2 | `feature/solenoid-valve` | `feature/led-simple` | ☐ | ☐ |
 | 3 | `feature/motor-driver-tb6612` | `feature/solenoid-valve` | ☐ | ☐ |
 | 4 | `feature/gpio-pin-check` | `feature/motor-driver-tb6612` | ☐ | ☐ |
+| 5 | `feature/positional-servo` | `feature/gpio-pin-check` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
 git push -u origin feature/solenoid-valve
 git push -u origin feature/motor-driver-tb6612
 git push -u origin feature/gpio-pin-check
+git push -u origin feature/positional-servo
 ```
 
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
@@ -148,3 +150,78 @@ MotorTest(app_name="MotorTest", loop_interval=2.0).start()
 - ☐ Pi: run the program twice in a row (pins released, no "pin in use").
 - ☐ Any board: reset the controller while VM is powered → motors stay still (STBY
   pull-down).
+
+## 6. PositionalServoManager + PCA9685 — `feature/positional-servo`
+
+Wiring: `docs/devices/positional_servo_manager.md` and `docs/devices/pca9685.md`.
+Separate 5–6 V servo supply, grounds joined. On a Pi, enable I2C (`raspi-config`) and
+check `i2cdetect -y 1` shows `40`; `pip install -e .[gpio,i2c]`.
+
+Direct GPIO test (one servo on GP15 / BCM 18):
+
+```python
+from rpi_app_framework import RPIApp
+from rpi_app_framework.positional_servo_manager import PositionalServoManager
+
+PIN = 15   # BCM 18 on a Pi
+
+
+class ServoTest(RPIApp):
+    def setup(self):
+        self.servo = PositionalServoManager("pan", control_pin=PIN, app=self)
+        self.servo.move_to(90)                       # jumps (first move)
+        self.servo.move_to(0, speed_dps=45)          # 2 s sweep
+        self.servo.move_to(180, speed_dps=90)        # 2 s sweep
+        self.servo.center()
+
+    def loop(self):
+        pass                                         # holds 90; press Stop
+
+
+ServoTest(app_name="ServoTest", loop_interval=1.0).start()
+```
+
+PCA9685 test (servos on channels 0 and 1):
+
+```python
+from rpi_app_framework import RPIApp
+from rpi_app_framework.pca9685 import PCA9685
+from rpi_app_framework.positional_servo_manager import PositionalServoManager
+
+try:
+    from machine import I2C, Pin
+    BUS = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)   # Pico
+except ImportError:
+    BUS = 1                                             # Raspberry Pi OS
+
+
+class BoardTest(RPIApp):
+    def setup(self):
+        self.board = PCA9685("servos", i2c=BUS, app=self)
+        self.pan = PositionalServoManager(
+            "pan", pca=self.board, channel=0, start_angle=90, speed_dps=90, app=self)
+        self.tilt = PositionalServoManager(
+            "tilt", pca=self.board, channel=1, start_angle=90, app=self)
+        self.angle = 0
+
+    def loop(self):
+        self.pan.move_to(self.angle)
+        self.tilt.move_to(180 - self.angle)
+        self.angle = 180 - self.angle
+
+
+BoardTest(app_name="BoardTest", loop_interval=2.5).start()
+```
+
+- ☐ Pico 2 W, GPIO: no movement at start until the first `move_to`; sweeps take about
+  2 s each; holds at 90; Thonny Stop → servo goes limp (turns by hand); log ends with
+  `[pan] closed` then "stopped".
+- ☐ Pico 2 W, PCA9685: both servos center at start, then swing in opposite directions
+  every 2.5 s (pan smoothly, tilt at once); Stop → both limp; log closes `tilt`, `pan`,
+  then `servos`.
+- ☐ Pi 4 and Pi 5, GPIO (BCM 18): same as the Pico GPIO test; note jitter while
+  holding at 90 (expected with software timing, worse on a busy Pi 5).
+- ☐ Pi 4 and Pi 5, PCA9685 (`i2c=1`): same as the Pico PCA9685 test, no jitter.
+- ☐ Calibration: with a scope or by eye, 0/90/180 deg hit the servo's ends and middle;
+  if a board's pulses are off, note the `osc_hz` that fixes them.
+- ☐ Pi: run each program twice in a row (pin and bus released).

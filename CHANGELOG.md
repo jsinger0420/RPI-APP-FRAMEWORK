@@ -48,6 +48,15 @@ All notable changes to this project are documented here. Format based on
 - `rpi_app_framework._platform.gpio_pin()`: the one check for GPIO pin numbers (Pico
   0-29 or `"LED"`, Raspberry Pi OS BCM 0-27), with `PICO_GPIO_MAX`/`BCM_GPIO_MAX`
   (ADR-005).
+- `PCA9685`: native driver for the 16-channel PWM board (servos, LEDs) on the Pico
+  (`machine.I2C`) and Raspberry Pi OS (smbus2), with no Adafruit library (ADR-006).
+  It owns the board's frequency and channels; `close()` turns all channels off and
+  sleeps the chip. Device doc: `docs/devices/pca9685.md`.
+- `i2c` extra: `pip install rpi-app-framework[i2c]` installs smbus2.
+- `PositionalServoManager` follows the device contract (ADR-004): `app=`, `close()`
+  (pulses off, pin or channel released), `with` support. New `detach()`,
+  `start_angle`, `speed_dps` (smooth moves in degrees per second), `angle` and
+  `angle_to_pulse_us()`. Device doc: `docs/devices/positional_servo_manager.md`.
 - `MotorDriverTB6612FNG` follows the device contract (ADR-004): `app=`, `close()`
   (standby, motors off, pins released) and `with` support. New `brake(motor)` (short
   brake) and `enabled`. Device doc: `docs/devices/motor_driver_tb6612.md`.
@@ -119,12 +128,35 @@ All notable changes to this project are documented here. Format based on
   (0-29 or `"LED"`) and raise `ValueError` before touching hardware; pins are stored
   as ints (`LEDSimple("x", pin="17").pin == 17`). Pin error messages now name the
   class and argument (ADR-005).
+- **BREAKING:** `PositionalServoManager(name=None, control_pin=None, pca=None,
+  channel=None, min_pulse_us=500, max_pulse_us=2500, angle_range=(0, 180),
+  start_angle=None, speed_dps=None, log_func=None, app=None)`: name first (ADR-002).
+  PCA9685 mode takes a `PCA9685` board instead of an I2C bus: replace
+  `PositionalServoManager(i2c=i2c, channel=3)` with
+  `board = PCA9685("servos", i2c=i2c)` (once) and
+  `PositionalServoManager("pan", pca=board, channel=3)`. PCA9685 servos now work on
+  the Pico too (ADR-006).
+- **BREAKING:** `PositionalServoManager.to_angle(angle, smooth=True)` is now
+  `move_to(angle, speed_dps=...)`: moves are instant unless a speed is given (per call
+  or as the constructor's `speed_dps`); the old default was a blocking 120 deg/s
+  move. The first move after setup or `detach()` is always instant.
+- **BREAKING:** `PositionalServoManager` sends no pulses until the first move unless
+  `start_angle` is given (it used to center at start-up on Raspberry Pi OS only).
+  `center()` goes to the middle of `angle_range` (was always 90).
+- **BREAKING:** `PositionalServoManager` on Raspberry Pi OS uses gpiozero's default
+  pin factory (lgpio on the Pi 5) instead of forcing pigpio, so it no longer needs the
+  pigpio daemon and works on the Pi 5. For less jitter on a Pi 1-4, set
+  `GPIOZERO_PIN_FACTORY=pigpio`, or use a PCA9685.
 - `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
   a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a
   Pico and a Raspberry Pi.
 
 ### Removed
+- **BREAKING:** `PositionalServoManager.cleanup()` (use `close()`), the unused
+  `neutral_us` and `idle_timeout_sec` arguments, the `smooth_speed_deg_per_sec`
+  argument (now `speed_dps`), and the `i2c` argument (use `pca=`). The
+  `adafruit-circuitpython-pca9685` dependency is no longer used.
 - **BREAKING:** `MotorDriverTB6612FNG.stop(motor)` (lifecycle name, ADR-002). Use
   `brake(motor)` for the same effect or `stop_motor(motor)` to coast.
 - **BREAKING:** `MotorDriverTB6612FNG.start(motor)` (lifecycle name, ADR-002). Use
@@ -166,6 +198,10 @@ All notable changes to this project are documented here. Format based on
   creates every pin at its off level, so the motors cannot twitch at start-up.
 - `MotorDriverTB6612FNG`: if a later pin could not be claimed, the pins already
   claimed are released when the app closes the driver.
+- `PositionalServoManager` imports on a PC and on a Pi without pigpio (it imported
+  `gpiozero.pins.pigpio` at module level).
+- `PositionalServoManager` smooth moves now reach fractional targets and step at a
+  fixed 20 ms frame instead of one degree per step.
 - `SolenoidValve` on the Pico created its pin before setting the closed level, so an
   `active_high=False` (active-low relay) valve could open for an instant at start-up.
 - `LEDSimple` starts with the pin already low, so the LED no longer flashes for an

@@ -45,6 +45,7 @@ _LAZY_EXPORTS = {
     "MJPEGStreamingManager": "MJPEGRequestHandler",
     "MotionDetector": "motion_detector",
     "MotorDriverTB6612FNG": "motor_driver_tb6612",
+    "PCA9685": "pca9685",
     "PiHardwareAdapter": "pi_hardware_adapter",
     "PositionalServoManager": "positional_servo_manager",
     "PowerMonitor": "power_monitor",

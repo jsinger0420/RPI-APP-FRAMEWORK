@@ -58,9 +58,9 @@ conversation.
       (38 tests, CPython); core smoke-tested on the MicroPython unix port.
 - ☐ Verify on a Pico 2 W from Thonny (Stop button → devices closed, log ends with
       "stopped").
-- Carried to Step 5: `PositionalServoManager`, `PiHardwareAdapter`
-  still have `cleanup()` not `close()`, so registering them does **not** make them
-  safe on stop (call `cleanup()` in `teardown()` until converted).
+- Carried to Step 5: `PiHardwareAdapter` still has `cleanup()` not `close()`, so
+  registering it does **not** make it safe on stop (call `cleanup()` in
+  `teardown()` until converted). `PositionalServoManager` — done in Step 5.
   `I2SDACDeviceManager.deinitialize()` → `close()`. `SolenoidValve`: `cleanup()` →
   `close()` and `is_open` → `valve_open` — done in Step 5. `LEDSimple` has no
   `close()` (LED left as is) — done in Step 5. Update `examples/main.py` to
@@ -108,7 +108,10 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       checks in `LEDSimple`, `SolenoidValve` and `MotorDriverTB6612FNG`; use it in
       every later device group. (No hardware test of its own: the device tests cover
       it.)
-- ☐ `PositionalServoManager`
+- ◐ `PositionalServoManager` + new `PCA9685` (ADR-006) · `feature/positional-servo` —
+      `tests/test_positional_servo_manager.py`, `tests/test_pca9685.py`, device docs
+      for both. Native PCA9685 driver (no Adafruit), works on Pico and Pi; servos use
+      `pca=board, channel=n`; pigpio factory dropped (Pi 5); new `i2c` extra.
 - ☐ `JoystickXYManager`
 - ☐ `ADS1x15` + `PowerMonitor`
 - ☐ `PiHardwareAdapter`
@@ -153,3 +156,4 @@ See `docs/decisions/`.
 | 003 | `_platform.py` and gpiozero instead of RPi.GPIO | Accepted |
 | 004 | Device registry and uniform `close()` | Accepted |
 | 005 | GPIO pin numbers checked by `_platform.gpio_pin()` | Accepted (on branch) |
+| 006 | Native `PCA9685` device; servos use a board + channel | Accepted (on branch) |

@@ -42,7 +42,6 @@ KNOWN_FAILURES = {
         "joystick_xy_manager": "imports gpiozero at top level",
         "linux_ble_gatt": "imports dbus at top level",
         "motion_detector": "imports cv2/numpy at top level",
-        "positional_servo_manager": "imports gpiozero.pins.pigpio at top level",
     },
     "pico": {
         "ble_manager": "checks sys.implementation itself instead of _platform",

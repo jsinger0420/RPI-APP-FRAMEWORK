@@ -74,8 +74,8 @@ class MyApp(RPIApp):
     def setup(self):                       # create devices with app=self
         self.pump = Pump("pump", pin=15, app=self)
         # any object with a close() that makes it safe (e.g. CameraDeviceManager).
-        # NOT PositionalServoManager/PiHardwareAdapter yet: they have
-        # cleanup(), not close(), until Step 5 - call their cleanup() in teardown().
+        # NOT PiHardwareAdapter yet: it has
+        # cleanup(), not close(), until Step 5 - call its cleanup() in teardown().
         self.cam = self.add_device(CameraDeviceManager("cam"))
     def loop(self):                        # one tick; return False to end
         ...
@@ -197,7 +197,7 @@ def ticks_ms() -> int; def ticks_diff(new, old) -> int   # elapsed ms on both
 Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
 `motor_driver_tb6612`, `pi_hardware_adapter`. The remaining device modules still use
 their own detection and some top-level optional imports (`joystick_xy_manager`,
-`positional_servo_manager`, `I2SDACdevice_manager`, `cameradevicemanager`,
+`I2SDACdevice_manager`, `cameradevicemanager`,
 `motion_detector`, `linux_ble_gatt`); they move to `_platform` in Step 5.
 
 - Detection happens once; modules import the constants.
@@ -239,7 +239,7 @@ Module file names become snake_case (`i2s_dac.py`, `camera.py`, `mjpeg_server.py
 | Manual copy to `/lib` | Pico via Thonny | copy `src/rpi_app_framework/` |
 
 Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
-`servo` (adafruit-circuitpython-pca9685), `web` (microdot), `ble` (dbus-python),
+`i2c` (smbus2; added in Step 5 for `PCA9685`), `web` (microdot), `ble` (dbus-python),
 `audio` (pyalsaaudio), `camera` (picamera2), `vision` (opencv-python-headless, numpy),
 `all`.
 
@@ -251,7 +251,8 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `device_manager.py` | `DeviceManager` | ✓ | ✓ | — | core |
 | `led_simple.py` | `LEDSimple` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/led_simple.md` |
 | `motor_driver_tb6612.py` | `MotorDriverTB6612FNG` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/motor_driver_tb6612.md` |
-| `positional_servo_manager.py` | `PositionalServoManager` | ✓ | ✓ | DM | GPIO PWM or PCA9685 |
+| `positional_servo_manager.py` | `PositionalServoManager` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); GPIO or PCA9685 channel; `docs/devices/positional_servo_manager.md` |
+| `pca9685.py` | `PCA9685` | ✓ | ✓ | DM | new in Step 5 (ADR-006); native driver, `i2c` extra; `docs/devices/pca9685.md` |
 | `solenoid_valve.py` | `SolenoidValve` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/solenoid_valve.md` |
 | `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | partial | DM | Linux needs external ADC |
 | `ads1x15.py` | `ADS1x15` | ? | ✓ | DM | smbus2 on Linux |
