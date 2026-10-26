@@ -123,7 +123,9 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
 - ◐ `PiHardwareAdapter` · `feature/pi-hardware-adapter` — `tests/test_pi_hardware_adapter.py`,
       `docs/devices/pi_hardware_adapter.md`. `cleanup()` → `close()`; pin factory returns
       the same `DigitalOutput`/`DigitalInput`/`PWMOutput` objects on both platforms.
-- ☐ `WiFiManager`
+- ◐ `WiFiManager` · `feature/wifi-manager` — `tests/test_wifi_manager.py`,
+      `docs/devices/wifi_manager.md`. Networks from a dict or JSON file; `connect()`
+      returns the IP and raises `OSError` with the reason; `disconnect_on_close`.
 - ☐ `MicrodotManager`
 - ☐ `BLEManager` + `linux_ble_gatt`
 - ☐ Audio: `I2SDACDeviceManager` + `SoundStream` + `SoundMixer` (rename module to

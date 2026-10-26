@@ -25,6 +25,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 6 | `feature/joystick-xy` | `feature/positional-servo` | ☐ | ☐ |
 | 7 | `feature/ads1x15-power-monitor` | `feature/joystick-xy` | ☐ | ☐ |
 | 8 | `feature/pi-hardware-adapter` | `feature/ads1x15-power-monitor` | ☐ | ☐ |
+| 9 | `feature/wifi-manager` | `feature/pi-hardware-adapter` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -35,6 +36,7 @@ git push -u origin feature/positional-servo
 git push -u origin feature/joystick-xy
 git push -u origin feature/ads1x15-power-monitor
 git push -u origin feature/pi-hardware-adapter
+git push -u origin feature/wifi-manager
 ```
 
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
@@ -317,3 +319,22 @@ example in `docs/devices/pi_hardware_adapter.md`, plus in `setup()`:
 - ☐ Stop / Ctrl-C while the button is held → both LEDs go off; log ends with
   `[hw] closed` then "stopped".
 - ☐ Pi: run twice in a row (pins released, no "pin in use").
+
+## 10. WiFiManager — `feature/wifi-manager`
+
+Put a `wifi_config.json` with your network as `"home"` (and a deliberately wrong
+password as `"bad"`) next to the program. Program: the `Online` example in
+`docs/devices/wifi_manager.md`.
+
+- ☐ Pico 2 W: log shows `connected to '<ssid>', IP 192.168.x.x` within a few seconds;
+  `wifi.rssi` is a plausible negative dBm; no password appears in the log file.
+- ☐ Pico 2 W: `connect("bad")` fails at once with "wrong password"; a location whose
+  SSID is out of range fails with "network not found" (or a timeout after 15 s).
+- ☐ Pico 2 W: Thonny Stop → log shows `disconnected, radio off`, then "stopped".
+- ☐ Pico 2 W: turn the router off while running → within 30 s "WiFi lost,
+  reconnecting" and the reconnect error; router back on → reconnects.
+- ☐ Pi 4 / Pi 5 (Bookworm, NetworkManager): `connect("home")` returns the Pi's IP; when
+  already connected it returns at once; Ctrl-C does **not** drop the Pi's WiFi (SSH
+  stays up).
+- ☐ Pi: `connect("bad")` raises `OSError` with nmcli's message; over SSH, note whether
+  nmcli needed extra permissions.

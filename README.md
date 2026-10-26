@@ -59,7 +59,7 @@ Features
 RPIApp: Base class for app lifecycle and logging.
 DeviceManager: Base for hardware managers with logging.
 LEDSimple: Controls LEDs (on/off/blink).
-WiFiManager: Manages WiFi connections (Pico only).
+WiFiManager: Manages WiFi connections (Pico W / Pico 2 W and Raspberry Pi).
 MotorDriverTB6612FNG: Controls dual DC motors.
 MicrodotManager: Runs a lightweight web server.
 

@@ -72,6 +72,11 @@ All notable changes to this project are documented here. Format based on
   both platforms: `DigitalOutput` (`on`/`off`/`toggle`/`value`, `active_high`),
   `DigitalInput` (`value` = raw level) and `PWMOutput` (`duty` in percent); new
   `pins`. Device doc: `docs/devices/pi_hardware_adapter.md`.
+- `WiFiManager` follows the device contract (ADR-004): `app=`, `close()` (disconnects
+  on the Pico by default; `disconnect_on_close=` to choose). New `networks=` (a dict
+  instead of a file), `config_file=`, `timeout_s=`, open networks (no password),
+  `is_connected`, `ssid`, `location`, `rssi` (Pico). Device doc:
+  `docs/devices/wifi_manager.md`.
 - `JoystickXYManager` follows the device contract (ADR-004) and works on Raspberry Pi
   OS with an external ADC: each axis is an analog input (ADR-007), a Pico ADC pin or
   any object with `read_u16()`. New `read()`, `center`, `invert_x`/`invert_y`, and
@@ -201,6 +206,9 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `PowerMonitor.battery_voltage`/`battery_level` raise `OSError` when the
   ADC read fails (`report()` still logs it), and `PowerMonitor.close()` no longer
   closes the ADC (create the ADC with `app=self`).
+- `WiFiManager` on the Pico reports a wrong password or missing network at once
+  (was a 12 s timeout), and on Raspberry Pi OS no longer takes the connection down
+  before every connect, no longer waits a fixed 3 s, and imports on a PC.
 - `PiHardwareAdapter` pins are released on stop on the Pico too (outputs driven off,
   PWM de-initialized); before, `cleanup()` did nothing there.
 - `PowerMonitor` reads the Pico W / Pico 2 W USB sense from `WL_GPIO2` (GP24 is not
@@ -216,6 +224,17 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `PiHardwareAdapter.pwm()` returns a `PWMOutput` (was `machine.PWM` or
   `gpiozero.PWMOutputDevice`): set `pwm.duty` in percent. Pins, `pull`, `freq` and
   `duty` are validated.
+- **BREAKING:** `WiFiManager(name=None, networks=None, config_file="wifi_config.json",
+  timeout_s=15, disconnect_on_close=None, log_func=None, app=None)`. Positional
+  `WiFiManager("wifi", self.log)` calls must pass `log_func=` by keyword.
+- **BREAKING:** `WiFiManager.connect()` returns the IP address and raises `OSError`
+  for every failure (wrong password, network not found, timeout, `nmcli` missing or
+  failing) instead of `TimeoutError`/`RuntimeError`. It returns at once if already
+  connected to that network.
+- **BREAKING:** `WiFiManager.current_location` is now the read-only `location`;
+  `disconnect()` on Raspberry Pi OS only takes down a connection this manager made.
+- `WiFiManager` no longer logs the platform banner, and never logs passwords.
+- `.gitignore` lists `wifi_config.json`, so WiFi passwords are not committed by accident.
 - `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
   a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a

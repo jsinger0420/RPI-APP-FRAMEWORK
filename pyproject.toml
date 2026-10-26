@@ -102,6 +102,5 @@ convention = "google"
 "src/rpi_app_framework/motion_detector.py" = ["D", "F401"]
 "src/rpi_app_framework/sound_mixer.py" = ["D"]
 "src/rpi_app_framework/sound_stream.py" = ["D"]
-"src/rpi_app_framework/wifi_manager.py" = ["D", "B904", "E722", "F401", "F541"]
 # Examples are rewritten in Step 6.
 "examples/*" = ["D"]
