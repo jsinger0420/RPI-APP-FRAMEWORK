@@ -97,7 +97,7 @@ Memory:
 - Do not build large lists or strings in loops; preallocate `bytearray`/`array`.
 - No heavy work at import time.
 - Keep each Pico-capable module small; split Linux-only helpers into a separate module
-  (pattern: `ble_manager.py` + `linux_ble_gatt.py`).
+  (pattern: `_i2c.py`, loaded only by the I2C device managers).
 - For elapsed time use `_platform.ticks_ms()` and `_platform.ticks_diff(new, old)`
   (MicroPython ticks on the Pico, `time.monotonic()` on Linux).
 

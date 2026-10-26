@@ -40,7 +40,8 @@ conversation.
 - ☐ Verify on hardware: Pico 2 W (incl. whether `from rpi_app_framework import
       LEDSimple` works via module `__getattr__`), Pi 4, Pi 5. Tested so far only on a
       PC with gpiozero `MockFactory` and a simulated MicroPython environment.
-- Carried to Step 5: `ble_manager` fails to import on a PC (`linux_ble_gatt`);
+- Carried to Step 5: `ble_manager` fails to import on a PC (`linux_ble_gatt`) — fixed
+  in Step 5 (ADR-010);
   `joystick_xy_manager`, `positional_servo_manager` (pigpio, no Pi 5),
   `I2SDACdevice_manager`, `cameradevicemanager`, `motion_detector` still import
   optional libraries at top level. The Step 4 import-smoke test will flag these.
@@ -83,11 +84,9 @@ conversation.
   `subprocess` etc. are not caught; real-firmware testing still needed (Steps 2/3).
 - Carried to Step 5 — import-smoke strict xfails (delete the entry in
   `KNOWN_FAILURES` when fixed): plain PC: `I2SDACdevice_manager` (alsaaudio),
-  `ble_manager` + `linux_ble_gatt` (dbus), `cameradevicemanager` (picamera2),
-  `motion_detector` (cv2/numpy). (`joystick_xy_manager` and
-  `positional_servo_manager` fixed in Step 5.) Pico: `ble_manager` (checks
-  `sys.implementation` itself, so it takes the Linux path), plus the Linux-only
-  camera/vision/`linux_ble_gatt` modules. Ruff `per-file-ignores` in
+  `cameradevicemanager` (picamera2), `motion_detector` (cv2/numpy).
+  (`joystick_xy_manager`, `positional_servo_manager`, `ble_manager` and
+  `linux_ble_gatt` fixed in Step 5.) Pico: the Linux-only camera/vision modules. Ruff `per-file-ignores` in
   `pyproject.toml` list the modules still missing Google docstrings.
 
 ### Step 5 — Device managers to the new contract (one conversation per group)
@@ -130,7 +129,10 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       (incl. a real HTTP request when Microdot is installed; CI installs it),
       `docs/devices/microdot_manager.md`. ADR-009: server runs in `loop()` via `poll()`;
       Microdot 2 only; `web` extra.
-- ☐ `BLEManager` + `linux_ble_gatt`
+- ◐ `BLEManager` · `feature/ble-manager` — `tests/test_ble_manager.py`,
+      `docs/devices/ble_manager.md`. ADR-010: Pico W / Pico 2 W only for 0.2.0;
+      `linux_ble_gatt.py` (never worked) deleted; writes delivered by `poll()`;
+      re-advertises after disconnect; advertisement fits 31 bytes.
 - ☐ Audio: `I2SDACDeviceManager` + `SoundStream` + `SoundMixer` (rename module to
       `i2s_dac.py`)
 - ☐ Camera: `CameraDeviceManager` + `MJPEGStreamingManager` (subclass
@@ -173,3 +175,4 @@ See `docs/decisions/`.
 | 007 | Analog inputs are Pico ADC pins or objects with `read_u16()` | Accepted (on branch; amended) |
 | 008 | Register-level I2C access through `_i2c.I2CDevice` | Accepted (on branch) |
 | 009 | Web server runs inside the app loop (`poll()`), Microdot 2 | Accepted (on branch) |
+| 010 | BLE is Pico-only in 0.2.0; events are delivered by `poll()` | Accepted (on branch) |

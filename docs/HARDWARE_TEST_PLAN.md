@@ -27,6 +27,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 8 | `feature/pi-hardware-adapter` | `feature/ads1x15-power-monitor` | ☐ | ☐ |
 | 9 | `feature/wifi-manager` | `feature/pi-hardware-adapter` | ☐ | ☐ |
 | 10 | `feature/microdot-manager` | `feature/wifi-manager` | ☐ | ☐ |
+| 11 | `feature/ble-manager` | `feature/microdot-manager` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -39,6 +40,7 @@ git push -u origin feature/ads1x15-power-monitor
 git push -u origin feature/pi-hardware-adapter
 git push -u origin feature/wifi-manager
 git push -u origin feature/microdot-manager
+git push -u origin feature/ble-manager
 ```
 
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
@@ -358,3 +360,19 @@ BCM 17 and `port=8080`).
 - ☐ Pi 4 / Pi 5: same pages on port 8080; Ctrl-C and run again → no "address in use".
 - ☐ Pi: start a second copy while the first runs → `OSError: web server could not
   listen on 0.0.0.0:8080`.
+
+## 12. BLEManager — `feature/ble-manager` (Pico W / Pico 2 W only)
+
+Program: the `Remote` example in `docs/devices/ble_manager.md`. Client: nRF Connect or
+LightBlue on a phone.
+
+- ☐ Pico 2 W: "PicoRemote" appears in the scan; connect; the UART service shows RX
+  (write) and TX (read, notify); reading TX gives `off`.
+- ☐ Enable notifications on TX, write `on` (UTF-8) to RX → onboard LED on and TX
+  notifies `on`; write `off` → LED off, notifies `off`.
+- ☐ Disconnect, then connect again without restarting the Pico (advertising restarts).
+- ☐ Connect from two phones at once (if the stack allows); both get notifications.
+- ☐ Run WiFi (`WiFiManager`) and BLE together: both work.
+- ☐ Thonny Stop while connected → phone shows disconnected; board no longer appears in
+  scans; log ends with `[ble] closed` then "stopped".
+- ☐ Raspberry Pi: `BLEManager("ble")` raises `NotImplementedError` with the message.

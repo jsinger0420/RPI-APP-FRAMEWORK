@@ -72,6 +72,12 @@ All notable changes to this project are documented here. Format based on
   both platforms: `DigitalOutput` (`on`/`off`/`toggle`/`value`, `active_high`),
   `DigitalInput` (`value` = raw level) and `PWMOutput` (`duty` in percent); new
   `pins`. Device doc: `docs/devices/pi_hardware_adapter.md`.
+- `BLEManager` follows the device contract on the Pico W / Pico 2 W (ADR-010): `app=`,
+  `close()` (advertising off, centrals disconnected, radio off), `poll()` delivers
+  writes and connect/disconnect events in the app's thread, `set_value()`,
+  `notify()` to every connected central, `stop_advertising()`, `on_connect` /
+  `on_disconnect`, `is_connected`, 16-bit UUIDs, `max_len` for long values. Device
+  doc: `docs/devices/ble_manager.md`.
 - `MicrodotManager` follows the device contract and works with Microdot 2 on the Pico
   and Raspberry Pi OS (ADR-009): `poll(timeout_s)` serves web requests from inside
   `loop()`, so a web page and the hardware loop share one thread; `listen()`,
@@ -211,6 +217,9 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `PowerMonitor.battery_voltage`/`battery_level` raise `OSError` when the
   ADC read fails (`report()` still logs it), and `PowerMonitor.close()` no longer
   closes the ADC (create the ADC with `app=self`).
+- `BLEManager` restarts advertising after a central disconnects (it could be connected
+  to only once per run), and the advertisement fits the 31-byte limit with long
+  names (the name moved to the scan response).
 - `MicrodotManager.stop()` did nothing and `run()` never returned, so the server could
   not be stopped cleanly; `close()` now shuts it down and frees the port. A port
   already in use is reported as `OSError` instead of being logged and ignored.
@@ -232,6 +241,17 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `PiHardwareAdapter.pwm()` returns a `PWMOutput` (was `machine.PWM` or
   `gpiozero.PWMOutputDevice`): set `pwm.duty` in percent. Pins, `pull`, `freq` and
   `duty` are validated.
+- **BREAKING:** `BLEManager` is Pico W / Pico 2 W only in this version: on Raspberry
+  Pi OS the constructor raises `NotImplementedError` (the Linux backend never worked:
+  it imported a class that did not exist). `BLEManager(name=None, adv_name=None,
+  adv_interval_ms=100, on_connect=None, on_disconnect=None, log_func=None, app=None)`.
+- **BREAKING:** `BLEManager.start()`/`stop()` (lifecycle names, ADR-002) are now
+  `advertise()`/`close()`. `on_write` callbacks run from `poll()` (call it in
+  `loop()`) instead of inside the BLE interrupt.
+- **BREAKING:** `BLECharacteristic(uuid, flags, on_write=None, value=b"",
+  max_len=20)`: `on_read` is replaced by an initial `value` (the Pico's BLE stack never
+  called `on_read` on reads); update values with `ble.set_value(char, data)`. The
+  `ble` attribute is now private. Flags, UUIDs and lengths are validated.
 - **BREAKING:** `MicrodotManager(name=None, port=8080, host="0.0.0.0", log_func=None,
   app=None)`: positional `log_func` must be a keyword; new `host`. The Microdot object
   is now `.server` (was `.app`). Microdot 1.x (`microdot_asyncio`) is no longer
@@ -259,6 +279,7 @@ All notable changes to this project are documented here. Format based on
   Pico and a Raspberry Pi.
 
 ### Removed
+- `linux_ble_gatt.py`, an unfinished BlueZ backend that never worked (ADR-010).
 - **BREAKING:** `JoystickXYManager.log_position()` (it never returned). Log `read()`
   from `loop()` instead.
 - **BREAKING:** `PiHardwareAdapter.cleanup()` (use `close()`, or create it with
