@@ -24,12 +24,8 @@ Typical usage:
 
 import time
 
-from ._platform import IS_MICROPYTHON, require
+from ._platform import IS_MICROPYTHON, gpio_pin, require
 from .device_manager import DeviceManager
-
-# BCM GPIO numbers on the 40-pin header of every Raspberry Pi model.
-_BCM_MIN = 0
-_BCM_MAX = 27
 
 
 class LEDSimple(DeviceManager):
@@ -44,7 +40,7 @@ class LEDSimple(DeviceManager):
         preinstalled on Raspberry Pi OS).
 
     Attributes:
-        pin: The pin given to the constructor (``"LED"``, or a GPIO number).
+        pin: The GPIO number (int), or ``"LED"`` for the Pico onboard LED.
         led: The underlying ``machine.Pin`` (Pico) or ``gpiozero.LED``
             (Linux). Prefer the methods of this class; use ``led`` only for
             features they do not cover.
@@ -66,8 +62,8 @@ class LEDSimple(DeviceManager):
 
         Raises:
             ValueError: If ``name`` is invalid (an integer here usually means
-                pre-0.2.0 code that passed the pin first), or on Raspberry Pi
-                OS if ``pin`` is not a BCM number from 0 to 27.
+                pre-0.2.0 code that passed the pin first), or ``pin`` is not
+                valid for the platform (see ``_platform.gpio_pin``).
             ImportError: On Raspberry Pi OS, if gpiozero is not installed.
         """
         if isinstance(name, int):
@@ -76,15 +72,15 @@ class LEDSimple(DeviceManager):
                 "number {}. Use LEDSimple('status', pin={})".format(name, name)
             )
         super().__init__(name, log_func=log_func, app=app)
-        self.pin = pin
+        self.pin = gpio_pin(pin, arg="pin", feature="LEDSimple")
         if IS_MICROPYTHON:
             from machine import Pin
 
-            self.led = Pin(pin, Pin.OUT, value=0)
+            self.led = Pin(self.pin, Pin.OUT, value=0)
         else:
             gpiozero = require("gpiozero", extra="gpio", feature="LEDSimple")
-            self.led = gpiozero.LED(_bcm_pin(pin), initial_value=False)
-        self._log("ready on pin {}, off".format(pin))
+            self.led = gpiozero.LED(self.pin, initial_value=False)
+        self._log("ready on pin {}, off".format(self.pin))
 
     # ------------------------------------------------------------------
     # Control
@@ -204,31 +200,3 @@ class LEDSimple(DeviceManager):
             self.led.on()
         else:
             self.led.off()
-
-
-def _bcm_pin(pin):
-    """Validate a Raspberry Pi OS pin and return it as a BCM number.
-
-    Args:
-        pin: The ``pin`` argument given to :class:`LEDSimple`.
-
-    Returns:
-        int: BCM GPIO number from 0 to 27.
-
-    Raises:
-        ValueError: If ``pin`` is not an integer from 0 to 27 (strings of
-            digits such as ``"17"`` are accepted).
-    """
-    if isinstance(pin, (bool, float)):
-        number = None
-    else:
-        try:
-            number = int(pin)
-        except (TypeError, ValueError):
-            number = None
-    if number is None or not _BCM_MIN <= number <= _BCM_MAX:
-        raise ValueError(
-            "On Raspberry Pi OS the LED pin must be a BCM GPIO number from "
-            "{} to {}, got {!r}".format(_BCM_MIN, _BCM_MAX, pin)
-        )
-    return number

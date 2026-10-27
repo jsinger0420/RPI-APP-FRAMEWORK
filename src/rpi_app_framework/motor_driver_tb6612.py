@@ -28,11 +28,9 @@ Typical usage:
             self.motors.forward("right", speed=60)
 """
 
-from ._platform import IS_MICROPYTHON, require
+from ._platform import IS_MICROPYTHON, gpio_pin, require
 from .device_manager import DeviceManager
 
-_PICO_PIN_MAX = 29  # GP0-GP29 on RP2040 / RP2350
-_BCM_PIN_MAX = 27  # BCM GPIO on the 40-pin header of every Raspberry Pi
 _FREQ_MIN = 1  # Hz
 _FREQ_MAX = 100000  # Hz, the TB6612FNG's maximum PWM input frequency
 _PIN_ARGS = (
@@ -501,6 +499,9 @@ def _set_duty(pwm, speed):
 def _validate_pins(pins):
     """Check the seven pins and return them as GPIO numbers.
 
+    Each pin is checked with ``_platform.gpio_pin`` (ADR-005); this function
+    adds the driver's own rule that all seven are different.
+
     Args:
         pins: Pins in ``_PIN_ARGS`` order.
 
@@ -508,33 +509,12 @@ def _validate_pins(pins):
         tuple: The pins as ints (``"LED"`` is kept as is on the Pico).
 
     Raises:
-        ValueError: If a pin is missing, not 0-29 (or ``"LED"``) on the Pico,
-            not BCM 0-27 on Raspberry Pi OS, or used more than once.
+        ValueError: If a pin is missing, not valid for the platform, or used
+            more than once.
     """
-    high = _PICO_PIN_MAX if IS_MICROPYTHON else _BCM_PIN_MAX
     result = []
     for arg, pin in zip(_PIN_ARGS, pins):
-        if pin is None:
-            raise ValueError("{} is required".format(arg))
-        if IS_MICROPYTHON and pin == "LED":
-            result.append(pin)  # onboard LED, for bench testing
-            continue
-        number = None
-        if not isinstance(pin, (bool, float)):
-            try:
-                number = int(pin)
-            except (TypeError, ValueError):
-                number = None
-        if number is None or not 0 <= number <= high:
-            raise ValueError(
-                "{} must be a GPIO number from 0 to {}{}, got {!r}".format(
-                    arg,
-                    high,
-                    " (or 'LED')" if IS_MICROPYTHON else " (BCM)",
-                    pin,
-                )
-            )
-        result.append(number)
+        result.append(gpio_pin(pin, arg=arg, feature="MotorDriverTB6612FNG"))
     for i, pin in enumerate(result):
         if pin in result[:i]:
             raise ValueError(

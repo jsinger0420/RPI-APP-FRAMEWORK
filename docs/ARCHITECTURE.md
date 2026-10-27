@@ -188,6 +188,9 @@ def board_model() -> str                    # os.uname().machine on Pico,
                                             # /proc/device-tree/model on Linux; cached
 def require(module_name, extra=None, feature=None)  # import or raise ImportError
                                             # naming the pip extra; returns the module
+def gpio_pin(pin, arg="pin", feature=None)  # check a GPIO number: Pico 0-29 or
+                                            # "LED", Linux BCM 0-27; returns int
+                                            # (ADR-005, Step 5)
 def ticks_ms() -> int; def ticks_diff(new, old) -> int   # elapsed ms on both
 ```
 

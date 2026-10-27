@@ -45,6 +45,9 @@ All notable changes to this project are documented here. Format based on
   closed, pin released on Raspberry Pi OS) and `with` support. New `open_time_ms`
   (milliseconds the valve has been open, for watering time limits). Device doc:
   `docs/devices/solenoid_valve.md`.
+- `rpi_app_framework._platform.gpio_pin()`: the one check for GPIO pin numbers (Pico
+  0-29 or `"LED"`, Raspberry Pi OS BCM 0-27), with `PICO_GPIO_MAX`/`BCM_GPIO_MAX`
+  (ADR-005).
 - `MotorDriverTB6612FNG` follows the device contract (ADR-004): `app=`, `close()`
   (standby, motors off, pins released) and `with` support. New `brake(motor)` (short
   brake) and `enabled`. Device doc: `docs/devices/motor_driver_tb6612.md`.
@@ -112,6 +115,10 @@ All notable changes to this project are documented here. Format based on
   same name, a `freq` outside 1-100000 Hz, and non-numeric `speed`/`amount`; every
   control method raises `RuntimeError` after `close()`. Unknown-motor errors are a
   shorter `ValueError`.
+- **BREAKING:** `LEDSimple` and `SolenoidValve` check their pin on the Pico too
+  (0-29 or `"LED"`) and raise `ValueError` before touching hardware; pins are stored
+  as ints (`LEDSimple("x", pin="17").pin == 17`). Pin error messages now name the
+  class and argument (ADR-005).
 - `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
   a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a

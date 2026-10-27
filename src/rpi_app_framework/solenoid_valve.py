@@ -27,12 +27,8 @@ To dispense a fixed amount instead: ``valve.pulse(open_ms=2000)``.
 
 import time
 
-from ._platform import IS_MICROPYTHON, require, ticks_diff, ticks_ms
+from ._platform import IS_MICROPYTHON, gpio_pin, require, ticks_diff, ticks_ms
 from .device_manager import DeviceManager
-
-# BCM GPIO numbers on the 40-pin header of every Raspberry Pi model.
-_BCM_MIN = 0
-_BCM_MAX = 27
 
 
 class SolenoidValve(DeviceManager):
@@ -51,8 +47,8 @@ class SolenoidValve(DeviceManager):
         OS).
 
     Attributes:
-        control_pin: GPIO pin driving the MOSFET gate or relay input, as given
-            to the constructor.
+        control_pin: GPIO number (int) driving the MOSFET gate or relay input,
+            or ``"LED"`` on the Pico.
         active_high (bool): True if a HIGH level opens the valve.
         pin: The underlying ``machine.Pin`` (Pico) or
             ``gpiozero.DigitalOutputDevice`` (Linux). Prefer the methods of
@@ -85,8 +81,8 @@ class SolenoidValve(DeviceManager):
         Raises:
             ValueError: If ``name`` is invalid (an integer here usually means
                 pre-0.2.0 code that passed the pin first), ``control_pin`` is
-                missing, ``active_high`` is not a bool, or on Raspberry Pi OS
-                if ``control_pin`` is not a BCM number from 0 to 27.
+                missing or not valid for the platform (see
+                ``_platform.gpio_pin``), or ``active_high`` is not a bool.
             ImportError: On Raspberry Pi OS, if gpiozero is not installed.
         """
         if isinstance(name, int):
@@ -97,11 +93,11 @@ class SolenoidValve(DeviceManager):
                 )
             )
         super().__init__(name, log_func=log_func, app=app)
-        if control_pin is None:
-            raise ValueError("control_pin is required")
+        self.control_pin = gpio_pin(
+            control_pin, arg="control_pin", feature="SolenoidValve"
+        )
         if not isinstance(active_high, bool):
             raise ValueError("active_high must be True or False")
-        self.control_pin = control_pin
         self.active_high = active_high
         self._valve_open = False
         self._opened_at = 0
@@ -109,16 +105,16 @@ class SolenoidValve(DeviceManager):
         if IS_MICROPYTHON:
             from machine import Pin
 
-            self.pin = Pin(control_pin, Pin.OUT, value=self._level(False))
+            self.pin = Pin(self.control_pin, Pin.OUT, value=self._level(False))
         else:
             gpiozero = require("gpiozero", extra="gpio", feature="SolenoidValve")
             # gpiozero handles the polarity: on() always means "open".
             self.pin = gpiozero.DigitalOutputDevice(
-                _bcm_pin(control_pin), active_high=active_high, initial_value=False
+                self.control_pin, active_high=active_high, initial_value=False
             )
         self._log(
             "ready on pin {} (active {}), valve closed".format(
-                control_pin, "high" if active_high else "low"
+                self.control_pin, "high" if active_high else "low"
             )
         )
 
@@ -295,31 +291,3 @@ def _check_ms(arg_name, value, allow_zero):
         raise ValueError(
             "{} must be {} 0 ms".format(arg_name, ">=" if allow_zero else ">")
         )
-
-
-def _bcm_pin(pin):
-    """Validate a Raspberry Pi OS pin and return it as a BCM number.
-
-    Args:
-        pin: The ``control_pin`` argument given to :class:`SolenoidValve`.
-
-    Returns:
-        int: BCM GPIO number from 0 to 27.
-
-    Raises:
-        ValueError: If ``pin`` is not an integer from 0 to 27 (strings of
-            digits such as ``"17"`` are accepted).
-    """
-    if isinstance(pin, (bool, float)):
-        number = None
-    else:
-        try:
-            number = int(pin)
-        except (TypeError, ValueError):
-            number = None
-    if number is None or not _BCM_MIN <= number <= _BCM_MAX:
-        raise ValueError(
-            "On Raspberry Pi OS the valve control_pin must be a BCM GPIO "
-            "number from {} to {}, got {!r}".format(_BCM_MIN, _BCM_MAX, pin)
-        )
-    return number

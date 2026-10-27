@@ -87,7 +87,7 @@ def test_default_pin_is_onboard_led():
 
 
 @pytest.mark.cpython_only
-@pytest.mark.parametrize("bad", ["LED", None, -1, 28, 4.0, True, "GPIO17"])
+@pytest.mark.parametrize("bad", ["LED", -1, 28, 4.0, True, "GPIO17"])
 def test_linux_rejects_non_bcm_pins(bad):
     """On Raspberry Pi OS the pin must be a BCM number 0-27."""
     with pytest.raises(ValueError, match="BCM"):
@@ -243,7 +243,14 @@ def test_app_registers_logs_and_closes_on_stop(platform):
         assert machine.sim_pin(PIN).value() == 0
 
 
-@pytest.mark.cpython_only
+@pytest.mark.micropython_only
+@pytest.mark.parametrize("bad", [None, -1, 30, "GP15", 4.0])
+def test_pico_rejects_invalid_pins(bad):
+    """On the Pico the pin must be 0-29 or "LED" (ADR-005)."""
+    with pytest.raises(ValueError, match="pin"):
+        LEDSimple("status", pin=bad, log_func=lambda m: None)
+
+
 def test_failed_constructor_is_closed_by_app():
     """A LED whose constructor failed after registering is closed safely."""
 
@@ -251,7 +258,7 @@ def test_failed_constructor_is_closed_by_app():
         """App whose setup creates an LED on an invalid pin."""
 
         def setup(self):
-            """Create an LED with a pin that is invalid on Raspberry Pi OS."""
+            """Create an LED with no pin."""
             LEDSimple("broken", pin=None, app=self)
 
     app = App("T", enable_file_logging=False)
