@@ -74,7 +74,7 @@ class MyApp(RPIApp):
     def setup(self):                       # create devices with app=self
         self.pump = Pump("pump", pin=15, app=self)
         # any object with a close() that makes it safe (e.g. CameraDeviceManager).
-        # NOT SolenoidValve/PositionalServoManager/PiHardwareAdapter yet: they have
+        # NOT PositionalServoManager/PiHardwareAdapter yet: they have
         # cleanup(), not close(), until Step 5 - call their cleanup() in teardown().
         self.cam = self.add_device(CameraDeviceManager("cam"))
     def loop(self):                        # one tick; return False to end
@@ -249,7 +249,7 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `led_simple.py` | `LEDSimple` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/led_simple.md` |
 | `motor_driver_tb6612.py` | `MotorDriverTB6612FNG` | ✓ | ✓ | DM | `stop(motor)` shadows lifecycle meaning |
 | `positional_servo_manager.py` | `PositionalServoManager` | ✓ | ✓ | DM | GPIO PWM or PCA9685 |
-| `solenoid_valve.py` | `SolenoidValve` | ✓ | ✓ | DM | |
+| `solenoid_valve.py` | `SolenoidValve` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/solenoid_valve.md` |
 | `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | partial | DM | Linux needs external ADC |
 | `ads1x15.py` | `ADS1x15` | ? | ✓ | DM | smbus2 on Linux |
 | `power_monitor.py` | `PowerMonitor` | ✓ | ✓ | DM | uses ADS1x15 on Linux |

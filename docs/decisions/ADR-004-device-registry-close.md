@@ -31,8 +31,8 @@ projects.
 ## Implementation notes (v0.2.0 Step 3)
 - The "open" flag lives in `DeviceManager._device_open`, not `_is_open`, because
   `SolenoidValve` already uses `_is_open` and an `is_open` property for valve state.
-  `SolenoidValve.is_open` still means "valve energized" until Step 5 renames it
-  (proposed: `valve_open`).
+  Step 5 renamed the valve state to `SolenoidValve.valve_open`, so `is_open` now means
+  "device not closed" for every device manager.
 - A device registers in `DeviceManager.__init__`, before the subclass touches
   hardware, so a device whose constructor fails part-way is still closed on stop.
   Subclass `close()` must therefore tolerate missing attributes.
