@@ -91,8 +91,9 @@ conversation.
 For each: constructor order (`name` first), `close()`, lazy imports, Google
 docstrings, device doc from `docs/devices/_TEMPLATE.md`, tests, and its hardware
 checks in `docs/HARDWARE_TEST_PLAN.md`. Branches are stacked (each starts from the
-previous one); the owner pushes and tests them on real boards after Step 5, from
-that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
+previous one). All merged into `main` on 2026-10-27 (PRs #14–#27); the owner tests
+them on real boards from `main`, from that plan. ◐ = code, tests and docs done (and
+merged); ☑ after the hardware test.
 - ◐ `LEDSimple` · `feature/led-simple` — `tests/test_led_simple.py`,
       `docs/devices/led_simple.md`, `examples/main.py`.
 - ◐ `SolenoidValve` · `feature/solenoid-valve` — `tests/test_solenoid_valve.py`,
@@ -145,8 +146,8 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       `chore/remove-motion-detector`. A redesign is in the backlog.
 
 ### Step 6 — Packaging & docs · `chore/packaging`
-Branch starts from `feature/camera` (stacked, see `docs/HARDWARE_TEST_PLAN.md` § 15).
-◐ = done on the branch, waiting for the hardware test / owner.
+Merged into `main` on 2026-10-27 (PR #28); hardware checks in
+`docs/HARDWARE_TEST_PLAN.md` § 15. ◐ = done and merged, waiting for the hardware test.
 - ☐ Before tagging 0.2.0 (owner, one time, `docs/RELEASING.md`): add the trusted
       publisher on PyPI and the `pypi` environment on GitHub. Do not push a `v*` tag
       before this, or the publish job fails at upload. Optional: make the CI checks

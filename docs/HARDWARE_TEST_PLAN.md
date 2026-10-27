@@ -1,62 +1,41 @@
 # Hardware test plan (v0.2.0)
 
 Running checklist of what still has to be done **by the owner** before v0.2.0:
-pushing the Step 5 branches and testing on real boards. Claude adds to it at the end
-of each Step 5 conversation; the owner ticks items off. When everything is ☑, mark
-the matching ROADMAP items ☑ and delete the finished sections here.
+testing on real boards. The owner ticks items off. When everything is ☑, mark the
+matching ROADMAP items ☑ and delete the finished sections here.
 
 Boards: Pico 2 W (MicroPython, Thonny), Pi 4 and Pi 5 (Raspberry Pi OS, with
 `pip install -e .[gpio]` or the preinstalled gpiozero).
 
-On a Pico, copy `src/rpi_app_framework/` to `/lib` first (re-copy after each branch).
+**Test from `main`.** All branches below are merged and deleted (2026-10-27), so the
+section headings name the branch a change came from, not something to check out. On
+a Pico, install from `main` with `mpremote mip install github:jsinger0420/RPI-APP-FRAMEWORK`
+or copy `src/rpi_app_framework/` to `/lib`; reinstall after pulling fixes. A bug found
+here becomes a `fix/<topic>` branch off `main`.
 
-## 1. Push and open PRs
+## 1. Pushed and merged
 
-The Step 5 branches are **stacked**: each starts from the previous one, so each PR
-contains only its own commit once the one before is merged. Merge them in order.
-
-| Order | Branch | Based on | Pushed | PR merged |
-|---|---|---|---|---|
-| 1 | `feature/led-simple` | `main` | ☐ | ☐ |
-| 2 | `feature/solenoid-valve` | `feature/led-simple` | ☐ | ☐ |
-| 3 | `feature/motor-driver-tb6612` | `feature/solenoid-valve` | ☐ | ☐ |
-| 4 | `feature/gpio-pin-check` | `feature/motor-driver-tb6612` | ☐ | ☐ |
-| 5 | `feature/positional-servo` | `feature/gpio-pin-check` | ☐ | ☐ |
-| 6 | `feature/joystick-xy` | `feature/positional-servo` | ☐ | ☐ |
-| 7 | `feature/ads1x15-power-monitor` | `feature/joystick-xy` | ☐ | ☐ |
-| 8 | `feature/pi-hardware-adapter` | `feature/ads1x15-power-monitor` | ☐ | ☐ |
-| 9 | `feature/wifi-manager` | `feature/pi-hardware-adapter` | ☐ | ☐ |
-| 10 | `feature/microdot-manager` | `feature/wifi-manager` | ☐ | ☐ |
-| 11 | `feature/ble-manager` | `feature/microdot-manager` | ☐ | ☐ |
-| 12 | `chore/remove-motion-detector` | `feature/ble-manager` | ☐ | ☐ |
-| 13 | `feature/audio` | `chore/remove-motion-detector` | ☐ | ☐ |
-| 14 | `feature/camera` | `feature/audio` | ☐ | ☐ |
-| 15 | `chore/packaging` | `feature/camera` | ☐ | ☐ |
-
-```
-git push -u origin feature/led-simple
-git push -u origin feature/solenoid-valve
-git push -u origin feature/motor-driver-tb6612
-git push -u origin feature/gpio-pin-check
-git push -u origin feature/positional-servo
-git push -u origin feature/joystick-xy
-git push -u origin feature/ads1x15-power-monitor
-git push -u origin feature/pi-hardware-adapter
-git push -u origin feature/wifi-manager
-git push -u origin feature/microdot-manager
-git push -u origin feature/ble-manager
-git push -u origin chore/remove-motion-detector
-git push -u origin feature/audio
-git push -u origin feature/camera
-```
+| Order | Branch | Pushed | PR merged |
+|---|---|---|---|
+| 1 | `feature/led-simple` | ☑ | ☑ #14 |
+| 2 | `feature/solenoid-valve` | ☑ | ☑ #15 |
+| 3 | `feature/motor-driver-tb6612` | ☑ | ☑ #16 |
+| 4 | `feature/gpio-pin-check` | ☑ | ☑ #17 |
+| 5 | `feature/positional-servo` | ☑ | ☑ #18 |
+| 6 | `feature/joystick-xy` | ☑ | ☑ #19 |
+| 7 | `feature/ads1x15-power-monitor` | ☑ | ☑ #20 |
+| 8 | `feature/pi-hardware-adapter` | ☑ | ☑ #21 |
+| 9 | `feature/wifi-manager` | ☑ | ☑ #22 |
+| 10 | `feature/microdot-manager` | ☑ | ☑ #23 |
+| 11 | `feature/ble-manager` | ☑ | ☑ #24 |
+| 12 | `chore/remove-motion-detector` | ☑ | ☑ #25 |
+| 13 | `feature/audio` | ☑ | ☑ #26 |
+| 14 | `feature/camera` | ☑ | ☑ #27 |
+| 15 | `chore/packaging` | ☑ | ☑ #28 |
 
 Branch 12 (ADR-011) only removes `MotionDetector`; it has no hardware test.
-Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
-on the newest branch you have pushed; the device tests below cover it.
-
-Open each PR with the previous branch as its base (GitHub retargets it to `main` when
-the one before is merged), or wait and open each after the previous one is merged.
-CI must be green on each.
+Branch 4 (ADR-005) only moves the pin checks into `_platform.py`; the device tests
+below cover it.
 
 ## 2. Earlier steps (core, not device specific)
 
@@ -422,15 +401,14 @@ Setup: `docs/devices/camera.md` (`sudo apt install python3-picamera2 ffmpeg`; ve
 
 ## 15. Packaging and examples — `chore/packaging`
 
-`mip` reads `package.json` from GitHub, so it can only be tested after the branch is
-pushed: use the branch name as the version, e.g.
-`mpremote mip install github:jsinger0420/RPI-APP-FRAMEWORK@chore/packaging`.
+`mip` reads `package.json` from GitHub, so these install from `main`.
 
-- ☐ Pico 2 W, empty `/lib`: the `mpremote mip install` above copies
+- ☐ Pico 2 W, empty `/lib`: `mpremote mip install github:jsinger0420/RPI-APP-FRAMEWORK`
+  copies
   `/lib/rpi_app_framework/` (no `camera.py` / `mjpeg_server.py`);
   `import rpi_app_framework; rpi_app_framework.__version__` prints `0.2.0.dev0`.
-- ☐ Pico 2 W on WiFi: `import mip; mip.install("github:jsinger0420/RPI-APP-FRAMEWORK",
-  version="chore/packaging")` from the REPL does the same.
+- ☐ Pico 2 W on WiFi: `import mip; mip.install("github:jsinger0420/RPI-APP-FRAMEWORK")` from
+  the REPL does the same.
 - ☐ Pi (any): in a fresh venv, `pip install "dist/rpi_app_framework-*.whl[all]"` from
   `python -m build` installs gpiozero, smbus2, microdot and pyalsaaudio.
 - ☐ Pico 2 W: `blink.py` and `led_lifecycle_demo.py` as `main.py`; Stop mid-blink →
