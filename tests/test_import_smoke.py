@@ -37,15 +37,11 @@ MODULES = sorted(
 KNOWN_FAILURES = {
     "plain-pc": {
         "I2SDACdevice_manager": "imports alsaaudio at top level",
-        "ble_manager": "imports linux_ble_gatt (dbus) at top level",
         "cameradevicemanager": "imports picamera2 at top level",
-        "linux_ble_gatt": "imports dbus at top level",
         "motion_detector": "imports cv2/numpy at top level",
     },
     "pico": {
-        "ble_manager": "checks sys.implementation itself instead of _platform",
         "cameradevicemanager": "Linux-only; imports picamera2 at top level",
-        "linux_ble_gatt": "Linux-only; imports dbus at top level",
         "motion_detector": "Linux-only; imports cv2/numpy at top level",
     },
 }

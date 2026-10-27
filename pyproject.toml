@@ -101,9 +101,7 @@ convention = "google"
 # line when its module is converted.
 "src/rpi_app_framework/I2SDACdevice_manager.py" = ["D"]
 "src/rpi_app_framework/MJPEGRequestHandler.py" = ["D"]
-"src/rpi_app_framework/ble_manager.py" = ["D"]
 "src/rpi_app_framework/cameradevicemanager.py" = ["D"]
-"src/rpi_app_framework/linux_ble_gatt.py" = ["D", "F401"]
 "src/rpi_app_framework/motion_detector.py" = ["D", "F401"]
 "src/rpi_app_framework/sound_mixer.py" = ["D"]
 "src/rpi_app_framework/sound_stream.py" = ["D"]
