@@ -254,14 +254,15 @@ Module file names become snake_case (`i2s_dac.py`, `camera.py`, `mjpeg_server.py
 | Channel | Audience | Mechanism |
 |---|---|---|
 | PyPI (`pip install rpi-app-framework[extras]`) | Pi 1–5, Zero | `pyproject.toml`, setuptools, wheel + sdist |
-| `mip` (`mip.install("github:jsinger0420/RPI-APP-FRAMEWORK")`) | Pico | `package.json` at repo root listing MicroPython-compatible modules (Target) |
+| `mip` (`mip.install("github:jsinger0420/RPI-APP-FRAMEWORK")`, `mpremote mip install ...`) | Pico | `package.json` at repo root listing every MicroPython-compatible module (ADR-012) |
 | Manual copy to `/lib` | Pico via Thonny | copy `src/rpi_app_framework/` |
 
-Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
-`i2c` (smbus2; added in Step 5 for `PCA9685`), `web` (microdot 2; added in Step 5),
-`audio` (pyalsaaudio>=0.9; added in Step 5). No `camera` extra: picamera2 must come
+Optional-dependency extras: `gpio` (gpiozero; lgpio comes with Raspberry Pi OS),
+`i2c` (smbus2), `web` (microdot 2), `audio` (pyalsaaudio>=0.9, Linux only), `all` (all
+four). `pi` is a deprecated alias of `gpio`. No `camera` extra: picamera2 must come
 from apt (`python3-picamera2`), because the pip package lacks the libcamera bindings.
-`all`.
+
+The version is single-sourced in `src/rpi_app_framework/_version.py` (ADR-012).
 
 ## 7. Device inventory (v0.1.5; Notes record Step 5 conversions)
 

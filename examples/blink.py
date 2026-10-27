@@ -7,8 +7,9 @@ resistor to BCM GPIO 17 and set ``LED_PIN = 17`` below.
 Stop it with Ctrl-C or Thonny's Stop button: the app closes the LED (turns it
 off) and the log ends with "stopped".
 
-On a Pico, copy ``src/rpi_app_framework/`` to ``/lib`` and this file to the
-board as ``main.py``.
+On a Pico, install the framework (see the README) and save this file to the
+board as ``main.py`` to run it at power-up. On a Raspberry Pi, run
+``python3 blink.py``.
 """
 
 from rpi_app_framework import RPIApp
