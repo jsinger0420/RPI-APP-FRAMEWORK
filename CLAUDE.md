@@ -46,7 +46,7 @@ docs/ARCHITECTURE.md       layers, lifecycle contract, DeviceManager contract, p
 docs/CONVENTIONS.md        code style, docstrings, imports, naming, MicroPython rules
 docs/ROADMAP.md            current release plan and backlog
 docs/RELEASING.md          how to cut a release (tag -> GitHub Actions -> PyPI)
-docs/HARDWARE_TEST_PLAN.md owner's pending pushes/PRs and real-hardware tests (Step 5)
+docs/HARDWARE_TEST_PLAN.md owner's real-hardware tests before v0.2.0 (test from main)
 .github/workflows/         ci.yml (lint, test, build), publish.yml (PyPI on tag)
 docs/decisions/            ADRs: one short file per architectural decision
 docs/devices/<module>.md   per-device spec: hardware, wiring, API, platform support, status
