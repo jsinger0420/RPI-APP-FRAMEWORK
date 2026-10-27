@@ -33,14 +33,11 @@ MODULES = sorted(
     if f.endswith(".py")
 )
 
-# module -> reason, per platform. Remove entries as Step 5 fixes them.
+# module -> reason, per platform. Empty since Step 5: every module imports on a
+# plain PC and on the simulated Pico. Add an entry (strict xfail) only with a reason.
 KNOWN_FAILURES = {
-    "plain-pc": {
-        "cameradevicemanager": "imports picamera2 at top level",
-    },
-    "pico": {
-        "cameradevicemanager": "Linux-only; imports picamera2 at top level",
-    },
+    "plain-pc": {},
+    "pico": {},
 }
 
 _BOOT = """\

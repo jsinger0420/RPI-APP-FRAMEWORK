@@ -73,8 +73,8 @@ uses a random hex id and lines use `TICKS-<ms>`.
 class MyApp(RPIApp):
     def setup(self):                       # create devices with app=self
         self.pump = Pump("pump", pin=15, app=self)
-        # any object with a close() that makes it safe (e.g. CameraDeviceManager).
-        self.cam = self.add_device(CameraDeviceManager("cam"))
+        # add_device() also accepts any object with a close() that makes it safe.
+        self.lamp = self.add_device(SomeThirdPartyRelay(17))
     def loop(self):                        # one tick; return False to end
         ...
     def teardown(self):                    # optional; devices still open here
@@ -133,7 +133,7 @@ There is no common cleanup method. Subclasses use `cleanup()`, `close()`,
 `WiFiManager(name, log_func)`).
 
 `CameraDeviceManager` and `MotionDetector` do not subclass `DeviceManager`
-(`MotionDetector` was removed in Step 5, ADR-011).
+(the camera does since Step 5; `MotionDetector` was removed, ADR-011).
 
 ### Contract (v0.2.0; base class done in Step 3, subclasses in Step 5)
 
@@ -212,13 +212,16 @@ Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
 `motor_driver_tb6612`, `pi_hardware_adapter`, `positional_servo_manager`, `pca9685`,
 `joystick_xy_manager`, `ads1x15`, `power_monitor`, `wifi_manager`, `microdot_manager`,
 `ble_manager` (`linux_ble_gatt` deleted, ADR-010), `i2s_dac` (was
-`I2SDACdevice_manager`), `sound_stream`, `sound_mixer`. The remaining device module
-still uses its own detection and a top-level optional import (`cameradevicemanager`);
-it moves to `_platform` in Step 5.
+`I2SDACdevice_manager`), `sound_stream`, `sound_mixer`, `camera` (was
+`cameradevicemanager`), `mjpeg_server` (was `MJPEGRequestHandler`). Every module now
+imports on a plain PC and on the simulated Pico (the import-smoke known-failure list is
+empty).
 
 - Detection happens once; modules import the constants.
-- `require("picamera2", extra="camera")` gives the user
-  `ImportError: CameraDeviceManager needs 'picamera2'. Install with: pip install rpi-app-framework[camera]`.
+- `require("smbus2", extra="i2c", feature="ADS1x15")` gives the user
+  `ImportError: ADS1x15 needs 'smbus2'. Install with: pip install rpi-app-framework[i2c]`.
+  Libraries that come from apt rather than pip (picamera2) raise their own message
+  with the apt command instead.
 - GPIO on Linux goes through **gpiozero**, which selects `lgpio` on Pi 5 and works on
   all earlier models. `RPi.GPIO` is dropped because it does not support the Pi 5.
   See ADR-003.
@@ -256,7 +259,8 @@ Module file names become snake_case (`i2s_dac.py`, `camera.py`, `mjpeg_server.py
 
 Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 `i2c` (smbus2; added in Step 5 for `PCA9685`), `web` (microdot 2; added in Step 5),
-`audio` (pyalsaaudio>=0.9; added in Step 5), `camera` (picamera2),
+`audio` (pyalsaaudio>=0.9; added in Step 5). No `camera` extra: picamera2 must come
+from apt (`python3-picamera2`), because the pip package lacks the libcamera bindings.
 `all`.
 
 ## 7. Device inventory (v0.1.5; Notes record Step 5 conversions)
@@ -280,7 +284,7 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `i2s_dac.py` (was `I2SDACdevice_manager.py`) | `I2SDACDeviceManager` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); MAX98357A, `machine.I2S` / ALSA (`audio` extra); `docs/devices/i2s_dac.md` |
 | `sound_stream.py` | `SoundStream` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); own WAV reader; `docs/devices/sound_stream.md` |
 | `sound_mixer.py` | `SoundMixer` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/sound_mixer.md` |
-| `cameradevicemanager.py` | `CameraDeviceManager` | ✗ | ✓ | none | picamera2; hardcoded `/home/pi` paths |
-| `MJPEGRequestHandler.py` | `MJPEGStreamingManager` | ✗ | ✓ | DM | |
+| `camera.py` (was `cameradevicemanager.py`) | `CameraDeviceManager` | ✗ | ✓ | DM | 0.2.0 contract (Step 5); picamera2 from apt; `docs/devices/camera.md` |
+| `mjpeg_server.py` (was `MJPEGRequestHandler.py`) | `MJPEGStreamingManager` | ✗ | ✓ | DM | 0.2.0 contract (Step 5); stdlib HTTP server in threads; `docs/devices/mjpeg_server.md` |
 
 Per-device detail belongs in `docs/devices/<module>.md`.

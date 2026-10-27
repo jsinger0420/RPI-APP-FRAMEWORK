@@ -14,7 +14,13 @@ All notable changes to this project are documented here. Format based on
   reader) with volume, looping, `rewind()`/`stop()`. `SoundMixer` sums streams into
   fixed-size buffers with clipping and drops finished streams. Device docs:
   `docs/devices/i2s_dac.md`, `sound_stream.md`, `sound_mixer.md`.
-- Camera (Linux only): `CameraDeviceManager` (picamera2), `MJPEGStreamingManager`.
+- Camera (Raspberry Pi OS only; on the device contract): `CameraDeviceManager`
+  (`rpi_app_framework.camera`, picamera2 from apt) keeps the camera running for
+  `capture_image()`, `capture_frame()`, `get_jpeg_frame()`, MP4 recording through
+  ffmpeg (`start_recording()`/`stop_recording()`) and an optional preview.
+  `MJPEGStreamingManager` (`rpi_app_framework.mjpeg_server`) streams it to browsers at
+  `/stream` (page at `/`), sharing one frame grabber between viewers. Device docs:
+  `docs/devices/camera.md`, `mjpeg_server.md`.
 - Design docs for contributors: `CLAUDE.md`, `docs/ARCHITECTURE.md`,
   `docs/CONVENTIONS.md`, `docs/ROADMAP.md`, `docs/decisions/` (ADR-001-004),
   `docs/devices/` templates.

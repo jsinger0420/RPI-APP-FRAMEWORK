@@ -44,7 +44,8 @@ conversation.
   in Step 5 (ADR-010);
   `joystick_xy_manager`, `positional_servo_manager` (pigpio, no Pi 5),
   `I2SDACdevice_manager`, `cameradevicemanager`, `motion_detector` still import
-  optional libraries at top level. The Step 4 import-smoke test will flag these.
+  optional libraries at top level. The Step 4 import-smoke test will flag these. — All
+  fixed in Step 5.
 
 ### Step 3 — Core lifecycle · `feature/core-lifecycle`
 - ☑ Mark ADR-004 Accepted (on the branch; reviewed in the PR).
@@ -82,12 +83,9 @@ conversation.
 - Owner's one-time PyPI/GitHub release setup deferred to Step 6 (before tagging).
 - Simulation limits: the Pico run uses CPython's standard library, so `threading`,
   `subprocess` etc. are not caught; real-firmware testing still needed (Steps 2/3).
-- Carried to Step 5 — import-smoke strict xfails (delete the entry in
-  `KNOWN_FAILURES` when fixed): plain PC: `cameradevicemanager` (picamera2).
-  (`joystick_xy_manager`, `positional_servo_manager`, `ble_manager`,
-  `linux_ble_gatt`, `I2SDACdevice_manager` (now `i2s_dac`) fixed and
-  `motion_detector` removed in Step 5.) Pico: the Linux-only camera modules. Ruff `per-file-ignores` in
-  `pyproject.toml` list the modules still missing Google docstrings.
+- Carried to Step 5 — import-smoke strict xfails and ruff docstring exemptions: all
+  cleared in Step 5 (`KNOWN_FAILURES` is empty; only `examples/*` stays exempt until
+  Step 6).
 
 ### Step 5 — Device managers to the new contract (one conversation per group)
 For each: constructor order (`name` first), `close()`, lazy imports, Google
@@ -138,8 +136,11 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       Own WAV reader (no `wave` on the Pico); Pico WS = SCK + 1 checked; no
       per-buffer logging; `play()`; new `audio` extra. Never released, so no
       breaking-change entries.
-- ☐ Camera: `CameraDeviceManager` + `MJPEGStreamingManager` (subclass
-      `DeviceManager`, remove hardcoded paths, snake_case modules)
+- ◐ Camera: `CameraDeviceManager` + `MJPEGStreamingManager` · `feature/camera` —
+      modules renamed `camera.py` / `mjpeg_server.py`; `tests/test_camera.py` (stream
+      tested over real HTTP); device docs. Camera is a `DeviceManager`, opens at
+      construction, no hardcoded paths, no OpenCV/Pillow/MP4Box (picamera2's own JPEG
+      and ffmpeg output); one frame grabber shared by all viewers. Never released.
 - ◐ Vision: `MotionDetector` removed from the package (ADR-011) ·
       `chore/remove-motion-detector`. A redesign is in the backlog.
 
