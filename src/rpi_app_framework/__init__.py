@@ -43,7 +43,6 @@ _LAZY_EXPORTS = {
     "LEDSimple": "led_simple",
     "MicrodotManager": "microdot_manager",
     "MJPEGStreamingManager": "MJPEGRequestHandler",
-    "MotionDetector": "motion_detector",
     "MotorDriverTB6612FNG": "motor_driver_tb6612",
     "PCA9685": "pca9685",
     "PiHardwareAdapter": "pi_hardware_adapter",

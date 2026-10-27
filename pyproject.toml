@@ -102,7 +102,6 @@ convention = "google"
 "src/rpi_app_framework/I2SDACdevice_manager.py" = ["D"]
 "src/rpi_app_framework/MJPEGRequestHandler.py" = ["D"]
 "src/rpi_app_framework/cameradevicemanager.py" = ["D"]
-"src/rpi_app_framework/motion_detector.py" = ["D", "F401"]
 "src/rpi_app_framework/sound_mixer.py" = ["D"]
 "src/rpi_app_framework/sound_stream.py" = ["D"]
 # Examples are rewritten in Step 6.

@@ -27,7 +27,7 @@ direction that the code does not yet follow; see `ROADMAP.md` for progress and
 │  Platform libraries                                       │
 │   Pico:  machine · network · bluetooth                    │
 │   Linux: gpiozero/lgpio · smbus2 · nmcli · microdot ·     │
-│          alsaaudio · picamera2 · opencv                   │
+│          alsaaudio · picamera2                            │
 └───────────────────────────────────────────────────────────┘
 ```
 
@@ -132,7 +132,8 @@ There is no common cleanup method. Subclasses use `cleanup()`, `close()`,
 (`LEDSimple(pin, name, log_func)` vs `SolenoidValve(control_pin, name, log_func)` vs
 `WiFiManager(name, log_func)`).
 
-`CameraDeviceManager` and `MotionDetector` do not subclass `DeviceManager`.
+`CameraDeviceManager` and `MotionDetector` do not subclass `DeviceManager`
+(`MotionDetector` was removed in Step 5, ADR-011).
 
 ### Contract (v0.2.0; base class done in Step 3, subclasses in Step 5)
 
@@ -212,7 +213,7 @@ Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
 `joystick_xy_manager`, `ads1x15`, `power_monitor`, `wifi_manager`, `microdot_manager`,
 `ble_manager` (`linux_ble_gatt` deleted, ADR-010). The remaining device modules still
 use their own detection and some top-level optional imports (`I2SDACdevice_manager`,
-`cameradevicemanager`, `motion_detector`); they move to `_platform` in Step 5.
+`cameradevicemanager`); they move to `_platform` in Step 5.
 
 - Detection happens once; modules import the constants.
 - `require("picamera2", extra="camera")` gives the user
@@ -254,7 +255,7 @@ Module file names become snake_case (`i2s_dac.py`, `camera.py`, `mjpeg_server.py
 
 Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 `i2c` (smbus2; added in Step 5 for `PCA9685`), `web` (microdot 2; added in Step 5),
-`audio` (pyalsaaudio), `camera` (picamera2), `vision` (opencv-python-headless, numpy),
+`audio` (pyalsaaudio), `camera` (picamera2),
 `all`.
 
 ## 7. Device inventory (v0.1.5; Notes record Step 5 conversions)
@@ -280,6 +281,5 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `sound_mixer.py` | `SoundMixer` | ? | ✓ | DM | |
 | `cameradevicemanager.py` | `CameraDeviceManager` | ✗ | ✓ | none | picamera2; hardcoded `/home/pi` paths |
 | `MJPEGRequestHandler.py` | `MJPEGStreamingManager` | ✗ | ✓ | DM | |
-| `motion_detector.py` | `MotionDetector` | ✗ | ✓ | none | OpenCV; not a device — candidate for a `vision` subpackage |
 
 Per-device detail belongs in `docs/devices/<module>.md`.

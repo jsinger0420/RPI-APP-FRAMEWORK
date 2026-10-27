@@ -38,11 +38,9 @@ KNOWN_FAILURES = {
     "plain-pc": {
         "I2SDACdevice_manager": "imports alsaaudio at top level",
         "cameradevicemanager": "imports picamera2 at top level",
-        "motion_detector": "imports cv2/numpy at top level",
     },
     "pico": {
         "cameradevicemanager": "Linux-only; imports picamera2 at top level",
-        "motion_detector": "Linux-only; imports cv2/numpy at top level",
     },
 }
 

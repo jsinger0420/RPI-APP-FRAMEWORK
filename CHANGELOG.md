@@ -8,8 +8,7 @@ All notable changes to this project are documented here. Format based on
 
 ### Added
 - Sound: `I2SDACDeviceManager` (MAX98357 I2S DAC), `SoundStream`, `SoundMixer`.
-- Camera and vision (Linux only): `CameraDeviceManager` (picamera2),
-  `MJPEGStreamingManager`, `MotionDetector` (OpenCV).
+- Camera (Linux only): `CameraDeviceManager` (picamera2), `MJPEGStreamingManager`.
 - Design docs for contributors: `CLAUDE.md`, `docs/ARCHITECTURE.md`,
   `docs/CONVENTIONS.md`, `docs/ROADMAP.md`, `docs/decisions/` (ADR-001-004),
   `docs/devices/` templates.

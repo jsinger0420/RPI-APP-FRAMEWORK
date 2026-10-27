@@ -84,9 +84,9 @@ conversation.
   `subprocess` etc. are not caught; real-firmware testing still needed (Steps 2/3).
 - Carried to Step 5 — import-smoke strict xfails (delete the entry in
   `KNOWN_FAILURES` when fixed): plain PC: `I2SDACdevice_manager` (alsaaudio),
-  `cameradevicemanager` (picamera2), `motion_detector` (cv2/numpy).
-  (`joystick_xy_manager`, `positional_servo_manager`, `ble_manager` and
-  `linux_ble_gatt` fixed in Step 5.) Pico: the Linux-only camera/vision modules. Ruff `per-file-ignores` in
+  `cameradevicemanager` (picamera2). (`joystick_xy_manager`,
+  `positional_servo_manager`, `ble_manager`, `linux_ble_gatt` fixed and
+  `motion_detector` removed in Step 5.) Pico: the Linux-only camera modules. Ruff `per-file-ignores` in
   `pyproject.toml` list the modules still missing Google docstrings.
 
 ### Step 5 — Device managers to the new contract (one conversation per group)
@@ -137,7 +137,8 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       `i2s_dac.py`)
 - ☐ Camera: `CameraDeviceManager` + `MJPEGStreamingManager` (subclass
       `DeviceManager`, remove hardcoded paths, snake_case modules)
-- ☐ Vision: `MotionDetector` → decide placement (ADR)
+- ◐ Vision: `MotionDetector` removed from the package (ADR-011) ·
+      `chore/remove-motion-detector`. A redesign is in the backlog.
 
 ### Step 6 — Packaging & docs · `chore/packaging`
 - ☐ Before tagging 0.2.0 (owner, one time, `docs/RELEASING.md`): add the trusted
@@ -159,6 +160,9 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
   tasks.
 - Config file support (`app_config.json`) shared by `RPIApp` and device managers.
 - Generated API reference (Sphinx or MkDocs + mkdocstrings) on GitHub Pages.
+- Motion detection, redesigned (ADR-011 removed the 0.1.5 `MotionDetector`): decide its
+  form first (camera frame processor, `vision` subpackage or separate package).
+- BLE on Raspberry Pi OS (BlueZ backend for `BLEManager`; ADR-010).
 
 ## Decisions log
 
@@ -176,3 +180,4 @@ See `docs/decisions/`.
 | 008 | Register-level I2C access through `_i2c.I2CDevice` | Accepted (on branch) |
 | 009 | Web server runs inside the app loop (`poll()`), Microdot 2 | Accepted (on branch) |
 | 010 | BLE is Pico-only in 0.2.0; events are delivered by `poll()` | Accepted (on branch) |
+| 011 | Remove `MotionDetector` from the package | Accepted (on branch) |
