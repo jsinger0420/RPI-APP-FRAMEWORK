@@ -62,7 +62,7 @@ conversation.
 - Carried to Step 5: `PiHardwareAdapter` still has `cleanup()` not `close()`, so
   registering it does **not** make it safe on stop (call `cleanup()` in
   `teardown()` until converted) — done in Step 5. `PositionalServoManager` — done in Step 5.
-  `I2SDACDeviceManager.deinitialize()` → `close()`. `SolenoidValve`: `cleanup()` →
+  `I2SDACDeviceManager.deinitialize()` → `close()` — done in Step 5. `SolenoidValve`: `cleanup()` →
   `close()` and `is_open` → `valve_open` — done in Step 5. `LEDSimple` has no
   `close()` (LED left as is) — done in Step 5. Update `examples/main.py` to
   `teardown()`/`loop()` — done with `LEDSimple`.
@@ -83,9 +83,9 @@ conversation.
 - Simulation limits: the Pico run uses CPython's standard library, so `threading`,
   `subprocess` etc. are not caught; real-firmware testing still needed (Steps 2/3).
 - Carried to Step 5 — import-smoke strict xfails (delete the entry in
-  `KNOWN_FAILURES` when fixed): plain PC: `I2SDACdevice_manager` (alsaaudio),
-  `cameradevicemanager` (picamera2). (`joystick_xy_manager`,
-  `positional_servo_manager`, `ble_manager`, `linux_ble_gatt` fixed and
+  `KNOWN_FAILURES` when fixed): plain PC: `cameradevicemanager` (picamera2).
+  (`joystick_xy_manager`, `positional_servo_manager`, `ble_manager`,
+  `linux_ble_gatt`, `I2SDACdevice_manager` (now `i2s_dac`) fixed and
   `motion_detector` removed in Step 5.) Pico: the Linux-only camera modules. Ruff `per-file-ignores` in
   `pyproject.toml` list the modules still missing Google docstrings.
 
@@ -133,8 +133,11 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
       `docs/devices/ble_manager.md`. ADR-010: Pico W / Pico 2 W only for 0.2.0;
       `linux_ble_gatt.py` (never worked) deleted; writes delivered by `poll()`;
       re-advertises after disconnect; advertisement fits 31 bytes.
-- ☐ Audio: `I2SDACDeviceManager` + `SoundStream` + `SoundMixer` (rename module to
-      `i2s_dac.py`)
+- ◐ Audio: `I2SDACDeviceManager` + `SoundStream` + `SoundMixer` · `feature/audio` —
+      module renamed `i2s_dac.py`; `tests/test_audio.py`; device docs for all three.
+      Own WAV reader (no `wave` on the Pico); Pico WS = SCK + 1 checked; no
+      per-buffer logging; `play()`; new `audio` extra. Never released, so no
+      breaking-change entries.
 - ☐ Camera: `CameraDeviceManager` + `MJPEGStreamingManager` (subclass
       `DeviceManager`, remove hardcoded paths, snake_case modules)
 - ◐ Vision: `MotionDetector` removed from the package (ADR-011) ·

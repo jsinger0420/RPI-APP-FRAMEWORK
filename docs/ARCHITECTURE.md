@@ -211,9 +211,10 @@ It is separate from `_platform.py` so GPIO-only Pico apps do not load it.
 Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
 `motor_driver_tb6612`, `pi_hardware_adapter`, `positional_servo_manager`, `pca9685`,
 `joystick_xy_manager`, `ads1x15`, `power_monitor`, `wifi_manager`, `microdot_manager`,
-`ble_manager` (`linux_ble_gatt` deleted, ADR-010). The remaining device modules still
-use their own detection and some top-level optional imports (`I2SDACdevice_manager`,
-`cameradevicemanager`); they move to `_platform` in Step 5.
+`ble_manager` (`linux_ble_gatt` deleted, ADR-010), `i2s_dac` (was
+`I2SDACdevice_manager`), `sound_stream`, `sound_mixer`. The remaining device module
+still uses its own detection and a top-level optional import (`cameradevicemanager`);
+it moves to `_platform` in Step 5.
 
 - Detection happens once; modules import the constants.
 - `require("picamera2", extra="camera")` gives the user
@@ -255,7 +256,7 @@ Module file names become snake_case (`i2s_dac.py`, `camera.py`, `mjpeg_server.py
 
 Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 `i2c` (smbus2; added in Step 5 for `PCA9685`), `web` (microdot 2; added in Step 5),
-`audio` (pyalsaaudio), `camera` (picamera2),
+`audio` (pyalsaaudio>=0.9; added in Step 5), `camera` (picamera2),
 `all`.
 
 ## 7. Device inventory (v0.1.5; Notes record Step 5 conversions)
@@ -276,9 +277,9 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `wifi_manager.py` | `WiFiManager` | ✓ (W boards) | ✓ | DM | 0.2.0 contract (Step 5); `network` / `nmcli`; networks from a dict or `wifi_config.json`; `docs/devices/wifi_manager.md` |
 | `ble_manager.py` | `BLEManager` | ✓ (W boards) | ✗ | DM | 0.2.0 contract (Step 5); Pico only, events via `poll()` (ADR-010); Linux backend in backlog; `docs/devices/ble_manager.md` |
 | `microdot_manager.py` | `MicrodotManager` | ✓ (W boards) | ✓ | DM | 0.2.0 contract (Step 5); Microdot 2, served from `loop()` with `poll()` (ADR-009); `web` extra; `docs/devices/microdot_manager.md` |
-| `I2SDACdevice_manager.py` | `I2SDACDeviceManager` | ✓ | ✓ | DM | MAX98357; alsaaudio top-level import |
-| `sound_stream.py` | `SoundStream` | ? | ✓ | DM | uses `wave` (not on MicroPython) |
-| `sound_mixer.py` | `SoundMixer` | ? | ✓ | DM | |
+| `i2s_dac.py` (was `I2SDACdevice_manager.py`) | `I2SDACDeviceManager` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); MAX98357A, `machine.I2S` / ALSA (`audio` extra); `docs/devices/i2s_dac.md` |
+| `sound_stream.py` | `SoundStream` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); own WAV reader; `docs/devices/sound_stream.md` |
+| `sound_mixer.py` | `SoundMixer` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/sound_mixer.md` |
 | `cameradevicemanager.py` | `CameraDeviceManager` | ✗ | ✓ | none | picamera2; hardcoded `/home/pi` paths |
 | `MJPEGRequestHandler.py` | `MJPEGStreamingManager` | ✗ | ✓ | DM | |
 

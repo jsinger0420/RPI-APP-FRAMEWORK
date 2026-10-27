@@ -7,7 +7,13 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
-- Sound: `I2SDACDeviceManager` (MAX98357 I2S DAC), `SoundStream`, `SoundMixer`.
+- Sound (on the device contract; module `rpi_app_framework.i2s_dac`):
+  `I2SDACDeviceManager` plays 16-bit mono audio on a MAX98357A I2S DAC with
+  `machine.I2S` on the Pico or ALSA on Raspberry Pi OS (`audio` extra); `write()`,
+  blocking `play()`. `SoundStream` loads 16-bit mono WAV files on both platforms (own
+  reader) with volume, looping, `rewind()`/`stop()`. `SoundMixer` sums streams into
+  fixed-size buffers with clipping and drops finished streams. Device docs:
+  `docs/devices/i2s_dac.md`, `sound_stream.md`, `sound_mixer.md`.
 - Camera (Linux only): `CameraDeviceManager` (picamera2), `MJPEGStreamingManager`.
 - Design docs for contributors: `CLAUDE.md`, `docs/ARCHITECTURE.md`,
   `docs/CONVENTIONS.md`, `docs/ROADMAP.md`, `docs/decisions/` (ADR-001-004),
