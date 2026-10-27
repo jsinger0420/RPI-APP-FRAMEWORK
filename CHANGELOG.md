@@ -45,6 +45,9 @@ All notable changes to this project are documented here. Format based on
   closed, pin released on Raspberry Pi OS) and `with` support. New `open_time_ms`
   (milliseconds the valve has been open, for watering time limits). Device doc:
   `docs/devices/solenoid_valve.md`.
+- `MotorDriverTB6612FNG` follows the device contract (ADR-004): `app=`, `close()`
+  (standby, motors off, pins released) and `with` support. New `brake(motor)` (short
+  brake) and `enabled`. Device doc: `docs/devices/motor_driver_tb6612.md`.
 
 ### Changed
 - **BREAKING:** GPIO on Raspberry Pi OS now uses gpiozero instead of `RPi.GPIO` in
@@ -96,10 +99,29 @@ All notable changes to this project are documented here. Format based on
   a non-bool `active_high`, and on Raspberry Pi OS for pins outside BCM 0-27.
 - `SolenoidValve.open_valve()`/`close_valve()` do nothing when the valve is already in
   that state. Log lines are shorter (`"valve opened"`, `"valve closed after 1500 ms"`).
+- **BREAKING:** `MotorDriverTB6612FNG(name=None, pwma_pin, ain1_pin, ain2_pin,
+  pwmb_pin, bin1_pin, bin2_pin, stby_pin, motor_a_name, motor_b_name, freq,
+  log_func=None, app=None)`: the name is now the first argument (ADR-002) and `freq`
+  comes before `log_func`. Migration: pass the pins as keywords,
+  `MotorDriverTB6612FNG("drive", pwma_pin=0, ain1_pin=1, ...)`. Old positional-pin
+  calls raise `ValueError` with this hint.
+- **BREAKING:** `MotorDriverTB6612FNG.stop_motor(motor)` now lets the motor coast (IN1
+  and IN2 LOW). The old `stop(motor)` short-braked it (PWM 0 with direction pins
+  kept); use the new `brake(motor)` for that.
+- **BREAKING:** `MotorDriverTB6612FNG` rejects a pin used twice, two motors with the
+  same name, a `freq` outside 1-100000 Hz, and non-numeric `speed`/`amount`; every
+  control method raises `RuntimeError` after `close()`. Unknown-motor errors are a
+  shorter `ValueError`.
+- `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
+  a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a
   Pico and a Raspberry Pi.
 
 ### Removed
+- **BREAKING:** `MotorDriverTB6612FNG.stop(motor)` (lifecycle name, ADR-002). Use
+  `brake(motor)` for the same effect or `stop_motor(motor)` to coast.
+- **BREAKING:** `MotorDriverTB6612FNG.start(motor)` (lifecycle name, ADR-002). Use
+  `enable()` then `forward(motor, 50)`.
 - **BREAKING:** `SolenoidValve.cleanup()`. Use `close()`, or create the valve with
   `app=self` so the app closes it.
 - **BREAKING:** module-level `MICROPYTHON` flags in `rpi_app`, `device_manager`,
@@ -133,6 +155,10 @@ All notable changes to this project are documented here. Format based on
 - `PiHardwareAdapter.digital_in(pull=...)` on the Pico passed the pull setting as
   part of the mode, so the pull resistor was not enabled.
 - `DeviceManager` name validation no longer imports `re` (limited on MicroPython).
+- `MotorDriverTB6612FNG` now holds STBY LOW before configuring the other pins and
+  creates every pin at its off level, so the motors cannot twitch at start-up.
+- `MotorDriverTB6612FNG`: if a later pin could not be claimed, the pins already
+  claimed are released when the app closes the driver.
 - `SolenoidValve` on the Pico created its pin before setting the closed level, so an
   `active_high=False` (active-low relay) valve could open for an instant at start-up.
 - `LEDSimple` starts with the pin already low, so the LED no longer flashes for an

@@ -101,7 +101,9 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
 - ◐ `SolenoidValve` · `feature/solenoid-valve` — `tests/test_solenoid_valve.py`,
       `docs/devices/solenoid_valve.md`. `is_open` → `valve_open`, `cleanup()` →
       `close()`, `pulse(open_ms, close_ms)`, new `open_time_ms`.
-- ☐ `MotorDriverTB6612FNG` (rename `stop(motor)` → `stop_motor`/`brake`)
+- ◐ `MotorDriverTB6612FNG` · `feature/motor-driver-tb6612` —
+      `tests/test_motor_driver_tb6612.py`, `docs/devices/motor_driver_tb6612.md`.
+      `stop(motor)`/`start(motor)` removed; `stop_motor` coasts, new `brake`.
 - ☐ `PositionalServoManager`
 - ☐ `JoystickXYManager`
 - ☐ `ADS1x15` + `PowerMonitor`

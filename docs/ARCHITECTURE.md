@@ -247,7 +247,7 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `rpi_app.py` | `RPIApp` | ✓ | ✓ | — | core |
 | `device_manager.py` | `DeviceManager` | ✓ | ✓ | — | core |
 | `led_simple.py` | `LEDSimple` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/led_simple.md` |
-| `motor_driver_tb6612.py` | `MotorDriverTB6612FNG` | ✓ | ✓ | DM | `stop(motor)` shadows lifecycle meaning |
+| `motor_driver_tb6612.py` | `MotorDriverTB6612FNG` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/motor_driver_tb6612.md` |
 | `positional_servo_manager.py` | `PositionalServoManager` | ✓ | ✓ | DM | GPIO PWM or PCA9685 |
 | `solenoid_valve.py` | `SolenoidValve` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `docs/devices/solenoid_valve.md` |
 | `joystick_xy_manager.py` | `JoystickXYManager` | ✓ | partial | DM | Linux needs external ADC |
