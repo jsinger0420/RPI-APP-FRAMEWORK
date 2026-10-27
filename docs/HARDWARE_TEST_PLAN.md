@@ -26,6 +26,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 7 | `feature/ads1x15-power-monitor` | `feature/joystick-xy` | ☐ | ☐ |
 | 8 | `feature/pi-hardware-adapter` | `feature/ads1x15-power-monitor` | ☐ | ☐ |
 | 9 | `feature/wifi-manager` | `feature/pi-hardware-adapter` | ☐ | ☐ |
+| 10 | `feature/microdot-manager` | `feature/wifi-manager` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -37,6 +38,7 @@ git push -u origin feature/joystick-xy
 git push -u origin feature/ads1x15-power-monitor
 git push -u origin feature/pi-hardware-adapter
 git push -u origin feature/wifi-manager
+git push -u origin feature/microdot-manager
 ```
 
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
@@ -338,3 +340,21 @@ password as `"bad"`) next to the program. Program: the `Online` example in
   stays up).
 - ☐ Pi: `connect("bad")` raises `OSError` with nmcli's message; over SSH, note whether
   nmcli needed extra permissions.
+
+## 11. MicrodotManager — `feature/microdot-manager`
+
+Install Microdot 2 (Pi: `pip install -e .[web]`; Pico: copy `src/microdot/` from the
+Microdot repository to `/lib`). Program: the `WebLed` example in
+`docs/devices/microdot_manager.md` (on a Pi, drop the WiFiManager line, use an LED on
+BCM 17 and `port=8080`).
+
+- ☐ Pico 2 W: browse to `http://<pico-ip>/` → `{"led": false}`; `/toggle` switches the
+  onboard LED each time and answers within ~0.1 s.
+- ☐ Pico 2 W: Thonny Stop → log shows `[web] closed`, `[led] closed`,
+  `disconnected, radio off`, then "stopped"; starting again works at once (no
+  "address in use").
+- ☐ Pico 2 W: hammer `/toggle` from a browser (hold F5) for 30 s → no crash or memory
+  error; note free memory before/after (`import gc; gc.mem_free()`).
+- ☐ Pi 4 / Pi 5: same pages on port 8080; Ctrl-C and run again → no "address in use".
+- ☐ Pi: start a second copy while the first runs → `OSError: web server could not
+  listen on 0.0.0.0:8080`.

@@ -72,6 +72,11 @@ All notable changes to this project are documented here. Format based on
   both platforms: `DigitalOutput` (`on`/`off`/`toggle`/`value`, `active_high`),
   `DigitalInput` (`value` = raw level) and `PWMOutput` (`duty` in percent); new
   `pins`. Device doc: `docs/devices/pi_hardware_adapter.md`.
+- `MicrodotManager` follows the device contract and works with Microdot 2 on the Pico
+  and Raspberry Pi OS (ADR-009): `poll(timeout_s)` serves web requests from inside
+  `loop()`, so a web page and the hardware loop share one thread; `listen()`,
+  `serve_forever()`, `serve_async()`, a `route()` decorator, `is_listening`. New `web`
+  extra. Device doc: `docs/devices/microdot_manager.md`.
 - `WiFiManager` follows the device contract (ADR-004): `app=`, `close()` (disconnects
   on the Pico by default; `disconnect_on_close=` to choose). New `networks=` (a dict
   instead of a file), `config_file=`, `timeout_s=`, open networks (no password),
@@ -206,6 +211,9 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `PowerMonitor.battery_voltage`/`battery_level` raise `OSError` when the
   ADC read fails (`report()` still logs it), and `PowerMonitor.close()` no longer
   closes the ADC (create the ADC with `app=self`).
+- `MicrodotManager.stop()` did nothing and `run()` never returned, so the server could
+  not be stopped cleanly; `close()` now shuts it down and frees the port. A port
+  already in use is reported as `OSError` instead of being logged and ignored.
 - `WiFiManager` on the Pico reports a wrong password or missing network at once
   (was a 12 s timeout), and on Raspberry Pi OS no longer takes the connection down
   before every connect, no longer waits a fixed 3 s, and imports on a PC.
@@ -224,6 +232,16 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `PiHardwareAdapter.pwm()` returns a `PWMOutput` (was `machine.PWM` or
   `gpiozero.PWMOutputDevice`): set `pwm.duty` in percent. Pins, `pull`, `freq` and
   `duty` are validated.
+- **BREAKING:** `MicrodotManager(name=None, port=8080, host="0.0.0.0", log_func=None,
+  app=None)`: positional `log_func` must be a keyword; new `host`. The Microdot object
+  is now `.server` (was `.app`). Microdot 1.x (`microdot_asyncio`) is no longer
+  supported: install Microdot 2 (`pip install rpi-app-framework[web]`, or copy it to
+  the Pico's `/lib`).
+- **BREAKING:** `MicrodotManager.setup()`, `run()`, `run_server_async()` and `stop()`
+  (lifecycle names, ADR-002) are replaced by `listen()`, `poll()`/`serve_forever()`,
+  `serve_async()` and `close()`. Migration: register routes, then call
+  `self.web.poll(0.05)` in `loop()` — or `self.web.serve_forever()` if the app only
+  serves pages.
 - **BREAKING:** `WiFiManager(name=None, networks=None, config_file="wifi_config.json",
   timeout_s=15, disconnect_on_close=None, log_func=None, app=None)`. Positional
   `WiFiManager("wifi", self.log)` calls must pass `log_func=` by keyword.

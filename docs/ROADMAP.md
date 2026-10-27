@@ -126,7 +126,10 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
 - ◐ `WiFiManager` · `feature/wifi-manager` — `tests/test_wifi_manager.py`,
       `docs/devices/wifi_manager.md`. Networks from a dict or JSON file; `connect()`
       returns the IP and raises `OSError` with the reason; `disconnect_on_close`.
-- ☐ `MicrodotManager`
+- ◐ `MicrodotManager` · `feature/microdot-manager` — `tests/test_microdot_manager.py`
+      (incl. a real HTTP request when Microdot is installed; CI installs it),
+      `docs/devices/microdot_manager.md`. ADR-009: server runs in `loop()` via `poll()`;
+      Microdot 2 only; `web` extra.
 - ☐ `BLEManager` + `linux_ble_gatt`
 - ☐ Audio: `I2SDACDeviceManager` + `SoundStream` + `SoundMixer` (rename module to
       `i2s_dac.py`)
@@ -169,3 +172,4 @@ See `docs/decisions/`.
 | 006 | Native `PCA9685` device; servos use a board + channel | Accepted (on branch) |
 | 007 | Analog inputs are Pico ADC pins or objects with `read_u16()` | Accepted (on branch; amended) |
 | 008 | Register-level I2C access through `_i2c.I2CDevice` | Accepted (on branch) |
+| 009 | Web server runs inside the app loop (`poll()`), Microdot 2 | Accepted (on branch) |
