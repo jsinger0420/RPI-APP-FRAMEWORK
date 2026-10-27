@@ -1,6 +1,7 @@
 # Secrets & credentials
 .pypirc
 .env
+wifi_config.json
 
 # Python
 __pycache__/

@@ -209,7 +209,7 @@ It is separate from `_platform.py` so GPIO-only Pico apps do not load it.
 
 Converted so far: `rpi_app`, `device_manager`, `led_simple`, `solenoid_valve`,
 `motor_driver_tb6612`, `pi_hardware_adapter`, `positional_servo_manager`, `pca9685`,
-`joystick_xy_manager`, `ads1x15`, `power_monitor`. The remaining device modules still use
+`joystick_xy_manager`, `ads1x15`, `power_monitor`, `wifi_manager`. The remaining device modules still use
 their own detection and some top-level optional imports
 (`I2SDACdevice_manager`, `cameradevicemanager`,
 `motion_detector`, `linux_ble_gatt`); they move to `_platform` in Step 5.
@@ -272,7 +272,7 @@ Optional-dependency extras (Target): `gpio` (gpiozero, lgpio), `i2c` (smbus2),
 | `ads1x15.py` | `ADS1x15` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); `_i2c` (ADR-008); `channel(n)` analog inputs (ADR-007); `docs/devices/ads1x15.md` |
 | `power_monitor.py` | `PowerMonitor` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); battery is an analog input; `docs/devices/power_monitor.md` |
 | `pi_hardware_adapter.py` | `PiHardwareAdapter` | ✓ | ✓ | DM | 0.2.0 contract (Step 5); owns `DigitalOutput`/`DigitalInput`/`PWMOutput` pins; `docs/devices/pi_hardware_adapter.md` |
-| `wifi_manager.py` | `WiFiManager` | ✓ | ✓ | DM | `network` / `nmcli`; reads `wifi_config.json` |
+| `wifi_manager.py` | `WiFiManager` | ✓ (W boards) | ✓ | DM | 0.2.0 contract (Step 5); `network` / `nmcli`; networks from a dict or `wifi_config.json`; `docs/devices/wifi_manager.md` |
 | `ble_manager.py` + `linux_ble_gatt.py` | `BLEManager` | ✓ | ✓ | DM | BlueZ via dbus on Linux |
 | `microdot_manager.py` | `MicrodotManager` | ✓ | ✓ | DM | old copy removed |
 | `I2SDACdevice_manager.py` | `I2SDACDeviceManager` | ✓ | ✓ | DM | MAX98357; alsaaudio top-level import |
