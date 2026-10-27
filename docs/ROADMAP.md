@@ -63,7 +63,8 @@ conversation.
   safe on stop (call `cleanup()` in `teardown()` until converted).
   `I2SDACDeviceManager.deinitialize()` → `close()`. `SolenoidValve.is_open` (valve
   state) shadows the base property — rename to `valve_open`. `LEDSimple` has no
-  `close()` (LED left as is). Update `examples/main.py` to `teardown()`/`loop()`.
+  `close()` (LED left as is) — done in Step 5. Update `examples/main.py` to
+  `teardown()`/`loop()` — done with `LEDSimple`.
 
 ### Step 4 — Test & CI skeleton · `feature/tests-ci`
 - ☑ `tests/stubs/` fake `machine`, `network`, `gpiozero`, `smbus2` (test helpers start
@@ -92,7 +93,10 @@ conversation.
 ### Step 5 — Device managers to the new contract (one conversation per group)
 For each: constructor order (`name` first), `close()`, lazy imports, Google
 docstrings, device doc from `docs/devices/_TEMPLATE.md`, tests.
-- ☐ `LEDSimple`
+- ◐ `LEDSimple` · `feature/led-simple` — code, tests (`tests/test_led_simple.py`,
+      both simulated platforms), `docs/devices/led_simple.md` and `examples/main.py`
+      done. ☐ Verify on hardware: Pico 2 W onboard LED (Thonny Stop → LED off, log
+      ends "stopped"), Pi 4/Pi 5 on BCM 17. Mark ☑ after that.
 - ☐ `SolenoidValve`
 - ☐ `MotorDriverTB6612FNG` (rename `stop(motor)` → `stop_motor`/`brake`)
 - ☐ `PositionalServoManager`

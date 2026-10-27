@@ -38,6 +38,9 @@ All notable changes to this project are documented here. Format based on
 - GitHub Actions: CI (ruff, black, pytest on Python 3.9-3.13 and Windows, build +
   `twine check`) on every push and PR; publishing to PyPI on a `v*` tag via Trusted
   Publishing (`docs/RELEASING.md`).
+- `LEDSimple` follows the device contract (ADR-004): `app=` (logs through the app and
+  is turned off when the app stops), `close()` (LED off, pin released on Raspberry Pi
+  OS), `with` support, `is_on`, and `pin`. Device doc: `docs/devices/led_simple.md`.
 
 ### Changed
 - **BREAKING:** GPIO on Raspberry Pi OS now uses gpiozero instead of `RPi.GPIO` in
@@ -63,6 +66,20 @@ All notable changes to this project are documented here. Format based on
 - **BREAKING:** `RPIApp.start()` raises `RuntimeError` if called a second time.
 - `RPIApp` log files: `max_log_files` now counts the new file (was one extra), and
   `max_log_files < 1` raises `ValueError`.
+- **BREAKING:** `LEDSimple(name=None, pin="LED", log_func=None, app=None)`: the name
+  is now the first argument (ADR-002). Migration: `LEDSimple(17, "status")` becomes
+  `LEDSimple("status", pin=17)`; calls that already used `pin=` and `name=` keywords
+  are unchanged. Passing a number first raises `ValueError` with this hint.
+- **BREAKING:** `LEDSimple` on Raspberry Pi OS rejects pins outside BCM 0-27 (and
+  `"LED"`) with `ValueError`. The Linux-only `led_pin` attribute is replaced by
+  `pin` on both platforms.
+- **BREAKING:** `LEDSimple.on()`, `off()`, `toggle()` and `blink()` raise
+  `RuntimeError` after `close()`; `blink()` raises `ValueError` for a non-positive
+  `duration` or a negative or non-integer `count`.
+- `LEDSimple` log lines are shorter (`"on"`, `"off"`, `"toggled on"`), and `blink()`
+  logs one line per call instead of one per on/off.
+- `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a
+  Pico and a Raspberry Pi.
 
 ### Removed
 - **BREAKING:** module-level `MICROPYTHON` flags in `rpi_app`, `device_manager`,
@@ -96,6 +113,8 @@ All notable changes to this project are documented here. Format based on
 - `PiHardwareAdapter.digital_in(pull=...)` on the Pico passed the pull setting as
   part of the mode, so the pull resistor was not enabled.
 - `DeviceManager` name validation no longer imports `re` (limited on MicroPython).
+- `LEDSimple` starts with the pin already low, so the LED no longer flashes for an
+  instant at construction.
 
 ## [0.1.5] - 2026-06-27
 

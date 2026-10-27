@@ -48,7 +48,7 @@ class DeviceManager:
     Device managers are context managers, so a device used briefly can be
     closed automatically::
 
-        with LEDSimple(pin="LED") as led:
+        with LEDSimple("status", pin="LED") as led:
             led.on()
 
     Platforms:

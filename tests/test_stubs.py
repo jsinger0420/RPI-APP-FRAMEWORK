@@ -166,7 +166,7 @@ def test_led_simple_drives_stub(platform):
     """LEDSimple works through machine.Pin or gpiozero.LED."""
     from rpi_app_framework.led_simple import LEDSimple
 
-    led = LEDSimple(pin=17, log_func=lambda m: None)
+    led = LEDSimple("status", pin=17, log_func=lambda m: None)
     assert _output_level(platform, 17) == 0
     led.on()
     assert _output_level(platform, 17) == 1

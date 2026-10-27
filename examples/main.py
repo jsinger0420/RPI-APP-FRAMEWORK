@@ -1,53 +1,33 @@
-import time
+"""Blink an LED with the RPIApp lifecycle.
+
+Runs on a Pico (MicroPython) and on a Raspberry Pi (Raspberry Pi OS). On the
+Pico the onboard LED blinks; on a Raspberry Pi, wire an LED with a 330 ohm
+resistor to BCM GPIO 17 and set ``LED_PIN = 17`` below.
+
+Stop it with Ctrl-C or Thonny's Stop button: the app closes the LED (turns it
+off) and the log ends with "stopped".
+
+On a Pico, copy ``src/rpi_app_framework/`` to ``/lib`` and this file to the
+board as ``main.py``.
+"""
 
 from rpi_app_framework import RPIApp
 from rpi_app_framework.led_simple import LEDSimple
 
+LED_PIN = "LED"  # Pico onboard LED; use a BCM number such as 17 on a Raspberry Pi
 
-class MyApp(RPIApp):
-    """
-    Sample application class inheriting from RPIApp.
-    Demonstrates LED blinking using LEDSimple.
-    """
 
-    def __init__(self, max_log_files=10):
-        """
-        Initialize the MyApp instance.
-
-        :param max_log_files: Maximum number of log files to keep (default: 10).
-        """
-        super().__init__(app_name="MyApp", max_log_files=max_log_files)
+class BlinkApp(RPIApp):
+    """Toggle an LED every ``loop_interval`` seconds."""
 
     def setup(self):
-        """
-        Setup method for MyApp.
-        Creates LEDSimple instance and ensures LED is off initially.
-        """
-        try:
-            self.led = LEDSimple(name="Status LED", log_func=self.log)
-            self.led.off()  # Ensure LED is off initially
-            self.log("MyApp setup complete")
-        except Exception as e:
-            self.log(f"Error in MyApp setup: {e}")
-            raise
+        """Create the LED. ``app=self`` closes it automatically on stop."""
+        self.led = LEDSimple("status", pin=LED_PIN, app=self)
 
-    def run(self):
-        """
-        Run method for MyApp.
-        Infinite loop that blinks the LED every second.
-        """
-        while self.running:
-            self.led.blink(duration=0.5, count=1)
-            time.sleep(1)  # Pause between blinks
+    def loop(self):
+        """Toggle the LED once per tick."""
+        self.led.toggle()
 
 
 if __name__ == "__main__":
-    app = MyApp(max_log_files=10)
-    try:
-        app.start()
-    except KeyboardInterrupt:
-        app.stop()
-        print("Application stopped by user")
-    except Exception as e:
-        app.stop()
-        print(f"Unhandled exception: {e}")
+    BlinkApp(app_name="BlinkApp", loop_interval=0.5, max_log_files=10).start()
