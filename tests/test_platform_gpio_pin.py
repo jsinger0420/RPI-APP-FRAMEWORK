@@ -1,4 +1,4 @@
-"""Tests for :func:`rpi_app_framework._platform.gpio_pin` (ADR-005).
+"""Tests for ``_platform.gpio_pin`` (ADR-005) and ``analog_input`` (ADR-007).
 
 Runs on both simulated platforms; the valid range depends on the platform.
 """
@@ -68,3 +68,55 @@ def test_linux_rejects_led_and_pico_only_pins():
     for bad in ("LED", 28, 29):
         with pytest.raises(ValueError, match="BCM GPIO number from 0 to 27"):
             gpio_pin(bad)
+
+
+# --- analog_input (ADR-007) -----------------------------------------------
+
+
+class _Input:
+    """Minimal analog input."""
+
+    def read_u16(self):
+        """Return mid-scale.
+
+        Returns:
+            int.
+        """
+        return 32768
+
+
+def test_analog_input_passes_objects_through():
+    """Objects with read_u16 are returned unchanged on both platforms."""
+    from rpi_app_framework._platform import analog_input
+
+    obj = _Input()
+    assert analog_input(obj) is obj
+
+
+def test_analog_input_required():
+    """None names the feature and argument."""
+    from rpi_app_framework._platform import analog_input
+
+    with pytest.raises(ValueError, match="^Thing x is required$"):
+        analog_input(None, arg="x", feature="Thing")
+
+
+@pytest.mark.cpython_only
+def test_analog_input_linux_has_no_adc():
+    """Pin numbers are rejected on Raspberry Pi OS."""
+    from rpi_app_framework._platform import analog_input
+
+    with pytest.raises(ValueError, match="no analog inputs"):
+        analog_input(26)
+
+
+@pytest.mark.micropython_only
+def test_analog_input_pico_adc_pins():
+    """Pico ADC pins open machine.ADC; other pins are rejected."""
+    from rpi_app_framework._platform import analog_input
+    from stubs import machine
+
+    adc = analog_input(28)
+    assert adc is machine.sim_adc(28)
+    with pytest.raises(ValueError, match="ADC pin"):
+        analog_input(25)

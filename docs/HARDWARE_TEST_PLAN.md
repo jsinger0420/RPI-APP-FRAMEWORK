@@ -23,6 +23,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 4 | `feature/gpio-pin-check` | `feature/motor-driver-tb6612` | ☐ | ☐ |
 | 5 | `feature/positional-servo` | `feature/gpio-pin-check` | ☐ | ☐ |
 | 6 | `feature/joystick-xy` | `feature/positional-servo` | ☐ | ☐ |
+| 7 | `feature/ads1x15-power-monitor` | `feature/joystick-xy` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -31,6 +32,7 @@ git push -u origin feature/motor-driver-tb6612
 git push -u origin feature/gpio-pin-check
 git push -u origin feature/positional-servo
 git push -u origin feature/joystick-xy
+git push -u origin feature/ads1x15-power-monitor
 ```
 
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
@@ -245,3 +247,56 @@ same app with the MCP3008 adapter from the device doc, or wait for the ADS1x15 g
 - ☐ Pi 4 / Pi 5 with an MCP3008 (optional): same checks; button on BCM 22.
 - ☐ Note which way is +x / +y on your module; if needed, record that `invert_x` /
   `invert_y` is required for the KY-023 orientation in the device doc.
+
+## 8. ADS1x15 + PowerMonitor — `feature/ads1x15-power-monitor`
+
+Wiring: `docs/devices/ads1x15.md`, `docs/devices/power_monitor.md`. ADS1115 on 3.3 V,
+ADDR to GND. Test signals: A0 = middle of a 10k potentiometer between 3V3 and GND;
+A1/A2 = joystick X/Y (optional); A3 = battery divider (optional, e.g. 1S with 10k/10k).
+This branch also moves `PCA9685` onto the shared I2C helper, so re-run the PCA9685
+test (section 6) on this branch.
+
+```python
+from rpi_app_framework import RPIApp
+from rpi_app_framework.ads1x15 import ADS1x15
+from rpi_app_framework.power_monitor import PowerMonitor
+
+try:
+    from machine import I2C, Pin
+    BUS = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)   # Pico
+except ImportError:
+    BUS = 1                                             # Raspberry Pi OS
+
+
+class AdcTest(RPIApp):
+    def setup(self):
+        self.adc = ADS1x15("adc", i2c=BUS, app=self)
+        self.pot = self.adc.channel(0, full_scale_v=3.3)
+        self.power = PowerMonitor.for_lipo(
+            1, "power", battery_input=self.adc.channel(3), app=self)
+
+    def loop(self):
+        v = self.adc.read_all_voltages()
+        self.log("A0 {:.3f} V  u16 {}".format(v[0], self.pot.read_u16()))
+        self.power.report()
+
+
+AdcTest(app_name="AdcTest", loop_interval=1.0).start()
+```
+
+- ☐ Pico 2 W and Pi 4 / Pi 5: turning the pot sweeps A0 from ~0.000 to ~3.3 V and
+  u16 from ~0 to ~65535; a multimeter agrees within a few mV.
+- ☐ Unplug SDA, then start the program → `OSError: No ADS1115 answered at 0x48`.
+- ☐ Unplug SDA while running → the read raises `OSError` and the app stops cleanly
+  ("stopped" in the log); `report()` alone logs "battery read failed".
+- ☐ Battery on A3 (1S, 10k/10k): `report()` shows the pack voltage (multimeter) and a
+  plausible %.
+- ☐ Joystick on the ADS1115 (`x_input=adc.channel(1, full_scale_v=3.3)`, Y on A2):
+  section 7 checks pass on a Pi 4 / Pi 5.
+- ☐ Pico 2 W, `PowerMonitor("power")` (VSYS): on USB, `report()` shows supply ~4.7-5.0 V
+  and `source usb`; on a 1S LiPo on VSYS, `source vsys` and the battery voltage.
+  Repeat with WiFi connected (`WiFiManager`) and note whether VSYS readings or WiFi go
+  wrong (Pico W GP29/wireless pin sharing).
+- ☐ Pi 4 / Pi 5: `report()` shows the core voltage and "throttle OK" on a good supply;
+  with a weak supply, `undervoltage_now`. Pi 5: does `current ...mA` appear?
+- ☐ Pi: run twice in a row (owned I2C bus closed and reopened).

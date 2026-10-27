@@ -57,6 +57,16 @@ All notable changes to this project are documented here. Format based on
   (pulses off, pin or channel released), `with` support. New `detach()`,
   `start_angle`, `speed_dps` (smooth moves in degrees per second), `angle` and
   `angle_to_pulse_us()`. Device doc: `docs/devices/positional_servo_manager.md`.
+- `ADS1x15` follows the device contract (ADR-004) and works on the Pico too
+  (`i2c=machine.I2C(...)`). New `channel(n, full_scale_v=...)` returns an analog input
+  (ADR-007) for `JoystickXYManager`, `PowerMonitor` and other devices; ADS1015 data
+  rates are supported. Device doc: `docs/devices/ads1x15.md`.
+- `PowerMonitor` follows the device contract: the battery is any analog input
+  (ADS1x15 channel, Pico ADC pin, or VSYS by default on the Pico), new
+  `for_lipo(cells, ...)`, and `report()` returns the line it logs. Device doc:
+  `docs/devices/power_monitor.md`.
+- Private `_i2c.I2CDevice` shared by I2C device managers (ADR-008), and
+  `_platform.analog_input()` (ADR-007), for contributors.
 - `JoystickXYManager` follows the device contract (ADR-004) and works on Raspberry Pi
   OS with an external ADC: each axis is an analog input (ADR-007), a Pico ADC pin or
   any object with `read_u16()`. New `read()`, `center`, `invert_x`/`invert_y`, and
@@ -164,6 +174,31 @@ All notable changes to this project are documented here. Format based on
   position as the center (each half-axis is scaled to reach -1 and 1), rejects a
   stick that is not at rest, and returns the center. The `x_center_offset`/
   `y_center_offset` arguments are removed.
+- **BREAKING:** `ADS1x15(name=None, i2c=None, address=0x48, model="ADS1115",
+  gain=4.096, data_rate=None, log_func=None, app=None)`: name first (ADR-002);
+  `i2c_bus=` is now `i2c=` (bus number, `SMBus`, or `machine.I2C` on the Pico).
+  Migration: `ADS1x15(model="ADS1015", i2c_bus=1)` becomes
+  `ADS1x15("adc", i2c=1, model="ADS1015")`. The default name is `"ADS1x15"` (was
+  e.g. `"ADS1115-0x48"`).
+- **BREAKING:** `ADS1x15` opens the bus and checks the chip at construction (raises
+  `OSError` if absent) instead of on first read, and reads raise `OSError` instead of
+  logging and returning `None`. `read_voltage()` is no longer rounded to 4 decimals.
+  `close()` leaves a borrowed bus open.
+- **BREAKING:** `PowerMonitor(name=None, battery_input=None, divider_ratio=None,
+  battery_min_v=3.0, battery_max_v=4.2, adc_ref_v=3.3, log_func=None, app=None)`:
+  `ads1x15=`/`ads1115_channel=` are replaced by one analog input, and
+  `voltage_divider_ratio=` is now `divider_ratio=` (required with an external input).
+  Migration: `PowerMonitor(ads1x15=adc, ads1115_channel=0, voltage_divider_ratio=2.0)`
+  becomes `PowerMonitor("power", battery_input=adc.channel(0), divider_ratio=2.0)`.
+- **BREAKING:** `PowerMonitor.from_1s()`...`from_4s()` no longer create an `ADS1x15`
+  themselves; pass `battery_input=adc.channel(0)` (on the Pico, no input means VSYS,
+  1S only). They take `(name, battery_input, log_func, app)`.
+- **BREAKING:** `PowerMonitor.battery_voltage`/`battery_level` raise `OSError` when the
+  ADC read fails (`report()` still logs it), and `PowerMonitor.close()` no longer
+  closes the ADC (create the ADC with `app=self`).
+- `PowerMonitor` reads the Pico W / Pico 2 W USB sense from `WL_GPIO2` (GP24 is not
+  VBUS on those boards), and no longer needs `re` or the walrus operator (both
+  awkward on MicroPython).
 - `MotorDriverTB6612FNG` log lines are shorter (`"left forward at 60%"`), and driving
   a motor while the driver is in standby logs a reminder to call `enable()`.
 - `examples/main.py` uses `loop()` and `LEDSimple(..., app=self)` and runs on both a

@@ -27,7 +27,7 @@ On Raspberry Pi OS pass the bus number instead: ``PCA9685("servos", i2c=1)``.
 
 import time
 
-from ._platform import IS_MICROPYTHON, require
+from ._i2c import I2CDevice
 from .device_manager import DeviceManager
 
 CHANNELS = 16
@@ -125,13 +125,12 @@ class PCA9685(DeviceManager):
         self.osc_hz = osc_hz
         self._prescale = _prescale(freq, osc_hz)
         self._owners = {}
-        self._bus, self._owns_bus = _open_bus(i2c)
+        self._dev = I2CDevice(i2c, address, feature="PCA9685")
         try:
             self._write(_MODE1, bytes((_MODE1_SLEEP | _MODE1_AI,)))
         except OSError as e:
-            if self._owns_bus:
-                self._bus.close()
-            self._bus = None
+            self._dev.close()
+            self._dev = None
             raise OSError(
                 "No PCA9685 answered at {} ({!r})".format(hex(address), e)
             ) from e
@@ -274,14 +273,14 @@ class PCA9685(DeviceManager):
         """
         if not self.is_open:
             return
-        bus = getattr(self, "_bus", None)
+        dev = getattr(self, "_dev", None)
         try:
-            if bus is not None:
+            if dev is not None:
                 self._write(_ALL_LED_ON_L, _FULL_OFF)
                 self._write(_MODE1, bytes((_MODE1_SLEEP | _MODE1_AI,)))
         finally:
-            if bus is not None and getattr(self, "_owns_bus", False):
-                bus.close()
+            if dev is not None:
+                dev.close()
             self._owners = {}
             super().close()
 
@@ -313,42 +312,7 @@ class PCA9685(DeviceManager):
             data: ``bytes`` to write (auto-increment must be on for more than
                 one byte).
         """
-        if IS_MICROPYTHON:
-            self._bus.writeto_mem(self.address, register, data)
-        else:
-            self._bus.write_i2c_block_data(self.address, register, list(data))
-
-
-def _open_bus(i2c):
-    """Return the bus object for ``i2c`` and whether the board owns it.
-
-    Args:
-        i2c: The ``i2c`` argument of :class:`PCA9685`.
-
-    Returns:
-        tuple: ``(bus, owned)``.
-
-    Raises:
-        ValueError: If ``i2c`` is missing (Pico) or not a usable bus.
-        ImportError: If smbus2 is needed and not installed.
-    """
-    if IS_MICROPYTHON:
-        if i2c is None or getattr(i2c, "writeto_mem", None) is None:
-            raise ValueError(
-                "On the Pico, i2c must be a machine.I2C, e.g. "
-                "I2C(0, sda=Pin(0), scl=Pin(1))"
-            )
-        return i2c, False
-    if i2c is None:
-        i2c = 1
-    if isinstance(i2c, int) and not isinstance(i2c, bool):
-        if i2c < 0:
-            raise ValueError("i2c bus number must be >= 0")
-        smbus2 = require("smbus2", extra="i2c", feature="PCA9685")
-        return smbus2.SMBus(i2c), True
-    if getattr(i2c, "write_i2c_block_data", None) is None:
-        raise ValueError("On Raspberry Pi OS, i2c must be a bus number or an SMBus")
-    return i2c, False
+        self._dev.write(register, data)
 
 
 def _prescale(freq, osc_hz):

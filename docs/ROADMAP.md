@@ -115,9 +115,11 @@ that plan. ◐ = code, tests and docs done; ☑ after the hardware test.
 - ◐ `JoystickXYManager` · `feature/joystick-xy` — `tests/test_joystick_xy_manager.py`,
       `docs/devices/joystick_xy_manager.md`. Axes are analog inputs (ADR-007): Pico
       ADC pins or any object with `read_u16()`; works on Linux with an external ADC.
-- ☐ `ADS1x15` + `PowerMonitor` — per ADR-007: add `ADS1x15.channel(n)` returning an
-      analog input (`read_u16()`, 0-65535), make `PowerMonitor` take analog inputs, and
-      add a joystick-on-ADS1115 test to the hardware plan.
+- ◐ `ADS1x15` + `PowerMonitor` · `feature/ads1x15-power-monitor` — `tests/test_ads1x15.py`,
+      `tests/test_power_monitor.py`, `tests/test_i2c.py`, device docs. Shared I2C
+      helper `_i2c.I2CDevice` (ADR-008, also used by `PCA9685`); `ADS1x15` works on the
+      Pico and gives `channel(n)` analog inputs; `PowerMonitor` battery is an analog
+      input (ADR-007 amended: optional `read_voltage()`, `_platform.analog_input()`).
 - ☐ `PiHardwareAdapter`
 - ☐ `WiFiManager`
 - ☐ `MicrodotManager`
@@ -161,4 +163,5 @@ See `docs/decisions/`.
 | 004 | Device registry and uniform `close()` | Accepted |
 | 005 | GPIO pin numbers checked by `_platform.gpio_pin()` | Accepted (on branch) |
 | 006 | Native `PCA9685` device; servos use a board + channel | Accepted (on branch) |
-| 007 | Analog inputs are Pico ADC pins or objects with `read_u16()` | Accepted (on branch) |
+| 007 | Analog inputs are Pico ADC pins or objects with `read_u16()` | Accepted (on branch; amended) |
+| 008 | Register-level I2C access through `_i2c.I2CDevice` | Accepted (on branch) |

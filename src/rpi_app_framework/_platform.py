@@ -11,6 +11,8 @@ It also provides:
   an error message that names the pip extra to install.
 * :func:`gpio_pin` to check a GPIO pin number against the platform's range
   (ADR-005).
+* :func:`analog_input` to turn a Pico ADC pin or an ADC channel object into an
+  analog input (ADR-007).
 * :func:`ticks_ms` / :func:`ticks_diff` for elapsed-time measurement that works
   the same way on the Pico and on Linux.
 
@@ -244,6 +246,52 @@ def gpio_pin(pin, arg="pin", feature=None):
             valid = "a BCM GPIO number from 0 to {} on Raspberry Pi OS".format(high)
         raise ValueError("{} must be {}, got {!r}".format(prefix, valid, pin))
     return number
+
+
+PICO_ADC_PINS = (26, 27, 28, 29)  # ADC0-ADC3; GP29 measures VSYS on most boards
+
+
+def analog_input(value, arg="input", feature=None):
+    """Return an analog input object for an analog-input argument (ADR-007).
+
+    Args:
+        value: On the Pico, an ADC pin number (26-29), opened with
+            ``machine.ADC``. On any platform, an object with ``read_u16()``
+            (returned unchanged, e.g. an external ADC channel).
+        arg: Name of the argument, used in error messages.
+        feature: What the input is for (usually a class name), used in
+            error messages.
+
+    Returns:
+        An object with ``read_u16()`` returning 0-65535 (and possibly
+        ``read_voltage()``).
+
+    Raises:
+        ValueError: If ``value`` is None, a pin number on Raspberry Pi OS
+            (no built-in ADC), or not an ADC pin on the Pico.
+    """
+    prefix = "{} {}".format(feature, arg) if feature else arg
+    if value is None:
+        raise ValueError("{} is required".format(prefix))
+    if getattr(value, "read_u16", None) is not None:
+        return value
+    if not IS_MICROPYTHON:
+        raise ValueError(
+            "Raspberry Pi boards have no analog inputs: {} must be an external "
+            "ADC channel with read_u16() (e.g. ADS1x15.channel(0)), got {!r}".format(
+                prefix, value
+            )
+        )
+    pin = gpio_pin(value, arg=arg, feature=feature)
+    if pin not in PICO_ADC_PINS:
+        raise ValueError(
+            "{} must be an ADC pin (26, 27, 28 or 29) on the Pico, got {!r}".format(
+                prefix, value
+            )
+        )
+    from machine import ADC, Pin
+
+    return ADC(Pin(pin))
 
 
 if IS_MICROPYTHON:
