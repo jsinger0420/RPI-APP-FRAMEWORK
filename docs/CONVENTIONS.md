@@ -121,7 +121,8 @@ Memory:
       as keywords (ADR-002).
 - [ ] Validates hardware parameters and raises `ValueError` with a clear message.
       GPIO numbers go through `_platform.gpio_pin(pin, arg=..., feature=...)`
-      (ADR-005) before any hardware is claimed.
+      (ADR-005) before any hardware is claimed. Analog values come from analog
+      inputs: a Pico ADC pin or an object with `read_u16()` (ADR-007).
 - [ ] Puts hardware in a safe state at init (outputs off).
 - [ ] Implements idempotent `close()`: `if not self.is_open: return`, make hardware
       safe (tolerating attributes a failed constructor never set), then

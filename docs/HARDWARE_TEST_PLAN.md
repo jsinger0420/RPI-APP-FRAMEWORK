@@ -22,6 +22,7 @@ contains only its own commit once the one before is merged. Merge them in order.
 | 3 | `feature/motor-driver-tb6612` | `feature/solenoid-valve` | ☐ | ☐ |
 | 4 | `feature/gpio-pin-check` | `feature/motor-driver-tb6612` | ☐ | ☐ |
 | 5 | `feature/positional-servo` | `feature/gpio-pin-check` | ☐ | ☐ |
+| 6 | `feature/joystick-xy` | `feature/positional-servo` | ☐ | ☐ |
 
 ```
 git push -u origin feature/led-simple
@@ -29,6 +30,7 @@ git push -u origin feature/solenoid-valve
 git push -u origin feature/motor-driver-tb6612
 git push -u origin feature/gpio-pin-check
 git push -u origin feature/positional-servo
+git push -u origin feature/joystick-xy
 ```
 
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`. Test the devices
@@ -225,3 +227,21 @@ BoardTest(app_name="BoardTest", loop_interval=2.5).start()
 - ☐ Calibration: with a scope or by eye, 0/90/180 deg hit the servo's ends and middle;
   if a board's pulses are off, note the `osc_hz` that fixes them.
 - ☐ Pi: run each program twice in a row (pin and bus released).
+
+## 7. JoystickXYManager — `feature/joystick-xy`
+
+Wiring: `docs/devices/joystick_xy_manager.md` (module powered from **3.3 V**). Pico
+test: the first example in the device doc (`Stick`, logs every 0.2 s). Pi test: the
+same app with the MCP3008 adapter from the device doc, or wait for the ADS1x15 group
+(it adds an ADS1115 joystick test).
+
+- ☐ Pico 2 W: at rest after `calibrate_center()` the log shows `x +0.00 y +0.00`;
+  full left/right/up/down reach about -1.00/+1.00; small movements near the center
+  stay 0.00 and then rise smoothly.
+- ☐ Pico 2 W: pressing the stick logs `PRESSED`; Stop → log ends with
+  `[stick] closed` then "stopped".
+- ☐ Pico 2 W: note the noise at rest with `deadzone=0` (how many counts) so we can
+  pick a sensible default deadzone.
+- ☐ Pi 4 / Pi 5 with an MCP3008 (optional): same checks; button on BCM 22.
+- ☐ Note which way is +x / +y on your module; if needed, record that `invert_x` /
+  `invert_y` is required for the KY-023 orientation in the device doc.
