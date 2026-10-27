@@ -1,197 +1,403 @@
-# rpi_app_framework/positional_servo_manager.py
+"""Positional (0-180 degree) hobby servo, e.g. SG90 or MG996R.
 
+A servo is driven either directly from a GPIO pin (one servo per pin) or from
+one channel of a :class:`~rpi_app_framework.pca9685.PCA9685` board (up to 16
+servos per board, ADR-006). Both work on the Pico (MicroPython) and on
+Raspberry Pi OS.
+
+The servo receives no pulses until the first move (it is "detached" and can be
+turned by hand), unless ``start_angle`` is given. :meth:`close` stops the
+pulses and releases the pin or channel, so a servo created with ``app=self``
+goes limp when the app stops instead of being held in an unknown position.
+
+Typical usage:
+
+    class Pan(RPIApp):
+        def setup(self):
+            self.pan = PositionalServoManager(
+                "pan", control_pin=15, start_angle=90, app=self)
+
+        def loop(self):
+            self.pan.move_to(30, speed_dps=60)    # 60 degrees per second
+            self.pan.move_to(150, speed_dps=60)
+
+With a PCA9685 board: ``PositionalServoManager("pan", pca=board, channel=0)``.
 """
-PositionalServoManager - Controls standard 180° positional hobby servos
-(e.g. SG90, MG996R, etc.).
-Supports:
-- Direct GPIO PWM (one servo per pin)
-- PCA9685 I²C 16-channel servo driver board
-Compatible with Raspberry Pi Pico (MicroPython) and full Raspberry Pi boards.
-"""
-
-# Platform & import detection
-try:
-    from machine import I2C, PWM, Pin
-
-    MICROPYTHON = True
-except ImportError:
-    from gpiozero import Servo
-    from gpiozero.pins.pigpio import PiGPIOFactory
-
-    MICROPYTHON = False
-
-try:
-    from adafruit_pca9685 import PCA9685
-
-    HAS_ADAFRUIT_PCA9685 = True
-except ImportError:
-    HAS_ADAFRUIT_PCA9685 = False
 
 import time
 
+from ._platform import IS_MICROPYTHON, gpio_pin, require
 from .device_manager import DeviceManager
+
+_FRAME_S = 0.02  # one 50 Hz servo frame (20000 us); step interval for smooth moves
+_PULSE_MIN_US = 100
+_PULSE_MAX_US = 3000
+_DEFAULT = object()  # "use the servo's default speed" marker for move_to()
 
 
 class PositionalServoManager(DeviceManager):
+    """One positional hobby servo on a GPIO pin or a PCA9685 channel.
+
+    Angles map linearly onto pulse widths: ``angle_range[0]`` gives
+    ``min_pulse_us`` and ``angle_range[1]`` gives ``max_pulse_us``. Angles
+    outside the range are clamped (and logged), which protects linkages that
+    must not go past their end stops.
+
+    Platforms:
+        Pico (MicroPython: ``machine.PWM`` at 50 Hz, or a PCA9685) and
+        Raspberry Pi (CPython: ``gpiozero.Servo`` with the default pin
+        factory, lgpio on the Pi 5; or a PCA9685 via smbus2). Install with
+        ``pip install rpi-app-framework[gpio]`` (GPIO) or ``[i2c]`` (PCA9685).
+
+    Attributes:
+        mode (str): ``"gpio"`` or ``"pca9685"``.
+        control_pin: GPIO number in ``"gpio"`` mode, else None.
+        pca: The :class:`~rpi_app_framework.pca9685.PCA9685` in ``"pca9685"``
+            mode, else None.
+        channel: PCA9685 channel in ``"pca9685"`` mode, else None.
+        min_pulse_us (int or float): Pulse width at ``min_angle``, in us.
+        max_pulse_us (int or float): Pulse width at ``max_angle``, in us.
+        min_angle (int or float): Lowest allowed angle, in degrees.
+        max_angle (int or float): Highest allowed angle, in degrees.
+        speed_dps (int, float or None): Default speed for :meth:`move_to`, in
+            degrees per second; None moves at once.
     """
-    Controls one positional (180°) hobby servo.
-    Supports two connection modes:
-
-    1. Direct GPIO PWM (single servo per pin)
-    2. PCA9685 I²C controller (multiple servos, requires adafruit_pca9685 library)
-
-    Features:
-    - angle control (0–180° or custom range)
-    - smooth movement with configurable speed
-    - safe range limiting
-    - pulse width calibration
-    - automatic power-off after idle timeout (optional)
-    """
-
-    DEFAULT_MIN_PULSE_US = 500
-    DEFAULT_MAX_PULSE_US = 2500
-    DEFAULT_NEUTRAL_US = 1500
-    DEFAULT_FREQUENCY_HZ = 50
 
     def __init__(
         self,
-        control_pin=None,  # GPIO pin for direct mode (optional)
-        i2c=None,  # I2C bus object for PCA9685 mode
-        channel=None,  # PCA9685 channel (0–15) if using I2C
-        name="Positional Servo",
-        min_pulse_us=DEFAULT_MIN_PULSE_US,
-        max_pulse_us=DEFAULT_MAX_PULSE_US,
-        neutral_us=DEFAULT_NEUTRAL_US,
+        name=None,
+        control_pin=None,
+        pca=None,
+        channel=None,
+        min_pulse_us=500,
+        max_pulse_us=2500,
         angle_range=(0, 180),
-        smooth_speed_deg_per_sec=120,
-        idle_timeout_sec=None,
+        start_angle=None,
+        speed_dps=None,
         log_func=None,
+        app=None,
     ):
-        """
-        Initialize positional servo controller.
+        """Set up the servo with no pulses (detached) unless ``start_angle`` is set.
+
+        Give either ``control_pin`` or ``pca`` and ``channel``.
 
         Args:
-            control_pin (int or str): GPIO pin (direct mode only)
-            i2c (I2C object): I2C bus for PCA9685 mode (optional)
-            channel (int): PCA9685 channel number (0–15) if using I2C
-            name (str): Friendly name for logging
-            min_pulse_us, max_pulse_us, neutral_us: Pulse width calibration in µs
-            angle_range (tuple): Allowed angle range in degrees
-            smooth_speed_deg_per_sec: Speed for smooth movement (°/s)
-            idle_timeout_sec (float, optional): Auto-disable PWM after idle time
-            log_func (callable, optional): Logging function from app
+            name: Name used in log lines. Defaults to
+                ``"PositionalServoManager"``.
+            control_pin: GPIO pin for direct drive: Pico 0-29, Raspberry Pi
+                OS BCM 0-27.
+            pca: A :class:`~rpi_app_framework.pca9685.PCA9685` board (create
+                it with ``freq=50``, the default).
+            channel: PCA9685 channel, 0-15. Required with ``pca``.
+            min_pulse_us: Pulse width at the lowest angle, in microseconds.
+                500-2500 suits many SG90s; use 1000-2000 for servos that only
+                accept the standard range. Must be >= 100.
+            max_pulse_us: Pulse width at the highest angle, in microseconds.
+                Must be greater than ``min_pulse_us`` and <= 3000.
+            angle_range: ``(lowest, highest)`` angle in degrees.
+            start_angle: Angle to move to at once during setup, in degrees, or
+                None to stay detached until the first move. The servo jumps
+                there at full speed.
+            speed_dps: Default speed for :meth:`move_to`, in degrees per
+                second (> 0), or None to move at once.
+            log_func: Function called with each log line, e.g. ``app.log``.
+                Keyword only by convention.
+            app: The :class:`~rpi_app_framework.rpi_app.RPIApp` that owns the
+                servo. It then logs through ``app.log`` and is closed when the
+                app stops. Keyword only by convention.
+
+        Raises:
+            ValueError: If ``name`` is invalid (an integer here usually means
+                pre-0.2.0 code that passed the pin first), both or neither of
+                ``control_pin`` and ``pca`` are given, ``channel`` is missing,
+                out of range or already used, or a pulse, angle or speed
+                argument is invalid.
+            RuntimeError: If ``pca`` has been closed.
+            ImportError: On Raspberry Pi OS in GPIO mode, if gpiozero is not
+                installed.
         """
-        super().__init__(name=name, log_func=log_func)
-
-        self.min_us = min_pulse_us
-        self.max_us = max_pulse_us
-        self.neutral_us = neutral_us
-        self.min_angle, self.max_angle = angle_range
-        self.smooth_speed = smooth_speed_deg_per_sec
-        self.idle_timeout_sec = idle_timeout_sec
-
-        self._current_angle = 90.0
-        self._last_move_time = time.time()
-
-        # Determine connection mode
-        if i2c is not None and channel is not None:
-            if not HAS_ADAFRUIT_PCA9685:
-                raise ImportError(
-                    "PCA9685 mode requires 'adafruit_pca9685' library. "
-                    "Install with: pip install adafruit-circuitpython-pca9685"
-                )
-            self.mode = "pca9685"
-            self.i2c = i2c
-            self.channel = channel
-            self.pca = PCA9685(i2c)
-            self.pca.frequency = self.DEFAULT_FREQUENCY_HZ
-            self._log(f"PCA9685 mode initialized - channel {channel}")
-        elif control_pin is not None:
-            self.mode = "direct_gpio"
-            self.control_pin = control_pin
-
-            if MICROPYTHON:
-                self._pwm = PWM(Pin(control_pin))
-                self._pwm.freq(self.DEFAULT_FREQUENCY_HZ)
-                self._disable_pwm()
-            else:
-                factory = PiGPIOFactory()
-                self._servo = Servo(
-                    control_pin,
-                    min_pulse_width=min_pulse_us / 1_000_000,
-                    max_pulse_width=max_pulse_us / 1_000_000,
-                    pin_factory=factory,
-                )
-                self._servo.mid()
-
-            self._log(f"Direct GPIO mode initialized on pin {control_pin}")
-        else:
+        if isinstance(name, int):
             raise ValueError(
-                "Must provide either control_pin (direct GPIO) "
-                "or i2c + channel (PCA9685)"
+                "PositionalServoManager's first argument is the name since "
+                "v0.2.0, got the number {}. Use "
+                "PositionalServoManager('pan', control_pin={})".format(name, name)
             )
+        super().__init__(name, log_func=log_func, app=app)
+        _check_pulses(min_pulse_us, max_pulse_us)
+        low, high = _check_angle_range(angle_range)
+        if start_angle is not None:
+            _check_number("start_angle", start_angle)
+        if speed_dps is not None:
+            _check_speed(speed_dps)
+        self.min_pulse_us = min_pulse_us
+        self.max_pulse_us = max_pulse_us
+        self.min_angle = low
+        self.max_angle = high
+        self.speed_dps = speed_dps
+        self._angle = None
+        self.control_pin = None
+        self.pca = None
+        self.channel = None
 
-    def _disable_pwm(self):
-        """Turn off PWM signal (saves power on Pico)."""
-        if self.mode == "direct_gpio" and MICROPYTHON:
-            self._pwm.duty_u16(0)
+        if (control_pin is None) == (pca is None):
+            raise ValueError("Give either control_pin, or pca and channel")
+        if pca is not None:
+            if getattr(pca, "claim_channel", None) is None:
+                raise ValueError("pca must be a PCA9685 device")
+            if channel is None:
+                raise ValueError("channel is required with pca")
+            pca.claim_channel(channel, self.name)  # validates channel
+            self.mode = "pca9685"
+            self.pca = pca
+            self.channel = channel
+            pca.channel_off(channel)
+            where = "{} channel {}".format(pca.name, channel)
+        else:
+            if channel is not None:
+                raise ValueError("channel is only used with pca")
+            self.mode = "gpio"
+            self.control_pin = gpio_pin(
+                control_pin, arg="control_pin", feature="PositionalServoManager"
+            )
+            if IS_MICROPYTHON:
+                from machine import PWM, Pin
 
-    def _set_pulse_us(self, us):
-        """Low-level method to set pulse width in microseconds."""
-        us = max(self.min_us, min(self.max_us, us))
-
-        if self.mode == "pca9685":
-            # PCA9685 uses 12-bit (0–4095) duty cycle over 20 ms period
-            pulse_steps = int((us * 4096) / 20000)
-            self.pca.channels[self.channel].duty_cycle = pulse_steps << 4
-        elif self.mode == "direct_gpio":
-            if MICROPYTHON:
-                duty = int((us / 20000) * 65535)
-                self._pwm.duty_u16(duty)
+                self._pwm = PWM(Pin(self.control_pin, Pin.OUT, value=0))
+                self._pwm.freq(50)
+                self._pwm.duty_u16(0)
             else:
-                fraction = (us - self.min_us) / (self.max_us - self.min_us)
-                value = (fraction * 2) - 1
-                self._servo.value = value
+                gpiozero = require(
+                    "gpiozero", extra="gpio", feature="PositionalServoManager"
+                )
+                self._servo = gpiozero.Servo(
+                    self.control_pin,
+                    initial_value=None,  # detached: no pulses
+                    min_pulse_width=min_pulse_us / 1000000,
+                    max_pulse_width=max_pulse_us / 1000000,
+                    frame_width=_FRAME_S,
+                )
+            where = "pin {}".format(self.control_pin)
+        self._log("ready on {}, detached".format(where))
+        if start_angle is not None:
+            self.move_to(start_angle, speed_dps=None)
 
-        self._last_move_time = time.time()
+    # ------------------------------------------------------------------
+    # Movement
+    # ------------------------------------------------------------------
 
-    def to_angle(self, target_angle, smooth=True):
-        """
-        Move servo to the specified angle (degrees).
+    def move_to(self, angle, speed_dps=_DEFAULT):
+        """Move to ``angle`` degrees, clamped to the allowed range.
 
         Args:
-            target_angle (float): Target angle in degrees
-            smooth (bool): If True, move gradually at controlled speed
+            angle: Target angle, in degrees.
+            speed_dps: Speed, in degrees per second (> 0), or None to move at
+                once. Defaults to the servo's ``speed_dps``. A timed move
+                blocks until done, stepping every 20 ms; the first move after
+                setup or :meth:`detach` is always made at once, because the
+                starting position is unknown.
+
+        Raises:
+            ValueError: If ``angle`` or ``speed_dps`` is not a valid number.
+            RuntimeError: If the servo (or its PCA9685) has been closed.
         """
-        target_angle = max(self.min_angle, min(self.max_angle, float(target_angle)))
+        self._require_open()
+        _check_number("angle", angle)
+        if speed_dps is _DEFAULT:
+            speed_dps = self.speed_dps
+        if speed_dps is not None:
+            _check_speed(speed_dps)
+        target = min(self.max_angle, max(self.min_angle, angle))
+        if target != angle:
+            self._log("angle {} clamped to {}".format(angle, target))
+        start = self._angle
+        if speed_dps is None or start is None or start == target:
+            self._set_angle(target)
+            self._log("moved to {} deg".format(target))
+            return
+        step = speed_dps * _FRAME_S
+        if target < start:
+            step = -step
+        pos = start
+        while True:
+            pos += step
+            if (step > 0 and pos >= target) or (step < 0 and pos <= target):
+                break
+            self._set_angle(pos)
+            time.sleep(_FRAME_S)
+        self._set_angle(target)
+        self._log("moved to {} deg at {} deg/s".format(target, speed_dps))
 
-        if smooth:
-            current = self._current_angle
-            step = 1 if target_angle > current else -1
-            delay = 1.0 / (self.smooth_speed / abs(step))
-            for ang in range(int(current), int(target_angle) + step, step):
-                self._set_pulse_us(self._angle_to_us(ang))
-                self._current_angle = ang
-                time.sleep(delay)
-        else:
-            self._set_pulse_us(self._angle_to_us(target_angle))
-            self._current_angle = target_angle
+    def center(self, speed_dps=_DEFAULT):
+        """Move to the middle of the angle range (90 for 0-180).
 
-        self._log(f"{self.name} moved to {target_angle:.1f}°")
+        Args:
+            speed_dps: As for :meth:`move_to`.
 
-    def _angle_to_us(self, angle):
-        """Convert angle to pulse width in microseconds."""
+        Raises:
+            RuntimeError: If the servo (or its PCA9685) has been closed.
+        """
+        self.move_to((self.min_angle + self.max_angle) / 2, speed_dps=speed_dps)
+
+    def detach(self):
+        """Stop sending pulses so the servo goes limp (and stops drawing holding current).
+
+        The next :meth:`move_to` moves at once, because the servo may have
+        been turned by hand meanwhile.
+
+        Raises:
+            RuntimeError: If the servo (or its PCA9685) has been closed.
+        """
+        self._require_open()
+        self._pulses_off()
+        self._angle = None
+        self._log("detached")
+
+    @property
+    def angle(self):
+        """float or int or None: Last commanded angle in degrees; None while detached."""
+        return self._angle
+
+    def angle_to_pulse_us(self, angle):
+        """Return the pulse width for an angle (no clamping).
+
+        Args:
+            angle: Angle, in degrees.
+
+        Returns:
+            float: Pulse width, in microseconds.
+        """
         fraction = (angle - self.min_angle) / (self.max_angle - self.min_angle)
-        return int(self.min_us + fraction * (self.max_us - self.min_us))
+        return self.min_pulse_us + fraction * (self.max_pulse_us - self.min_pulse_us)
 
-    def center(self):
-        """Move to neutral position (usually 90°)."""
-        self.to_angle(90)
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
 
-    def cleanup(self):
-        """Release resources."""
-        if self.mode == "direct_gpio" and not MICROPYTHON:
-            self._servo.close()
-        elif self.mode == "direct_gpio" and MICROPYTHON:
-            self._disable_pwm()
-        self._log(f"{self.name} cleaned up")
+    def close(self):
+        """Stop the pulses and release the pin or PCA9685 channel. Idempotent.
+
+        On Raspberry Pi OS the gpiozero servo is closed so the pin can be
+        reused; on the Pico the PWM output is de-initialized. If the PCA9685
+        was already closed, its channels are already off and nothing more is
+        needed. Safe to call after a constructor that failed part-way.
+        """
+        if not self.is_open:
+            return
+        try:
+            if getattr(self, "mode", None) == "pca9685":
+                try:
+                    self.pca.channel_off(self.channel)
+                except RuntimeError:
+                    pass  # board already closed: all its channels are off
+                self.pca.release_channel(self.channel)
+            elif IS_MICROPYTHON and getattr(self, "_pwm", None) is not None:
+                self._pwm.duty_u16(0)
+                self._pwm.deinit()
+            elif getattr(self, "_servo", None) is not None:
+                self._servo.close()
+        finally:
+            self._angle = None
+            super().close()
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _set_angle(self, angle):
+        """Output the pulse for ``angle`` and remember it.
+
+        Args:
+            angle: Angle in degrees, already within the range.
+        """
+        us = self.angle_to_pulse_us(angle)
+        if self.mode == "pca9685":
+            self.pca.set_pulse_us(self.channel, us)
+        elif IS_MICROPYTHON:
+            # 16-bit duty of a 20 ms frame: about 0.3 us resolution.
+            self._pwm.duty_u16(int(us * 65535 / 20000 + 0.5))
+        else:
+            span = self.max_pulse_us - self.min_pulse_us
+            value = (us - self.min_pulse_us) / span * 2 - 1
+            self._servo.value = max(-1.0, min(1.0, value))
+        self._angle = angle
+
+    def _pulses_off(self):
+        """Stop the pulses on the pin or channel."""
+        if self.mode == "pca9685":
+            self.pca.channel_off(self.channel)
+        elif IS_MICROPYTHON:
+            self._pwm.duty_u16(0)
+        else:
+            self._servo.value = None
+
+
+def _check_number(arg, value):
+    """Check that ``value`` is an int or float (not a bool).
+
+    Args:
+        arg: Argument name for the error message.
+        value: Value to check.
+
+    Raises:
+        ValueError: If ``value`` is not a number.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("{} must be a number, got {!r}".format(arg, value))
+
+
+def _check_speed(speed_dps):
+    """Check a speed in degrees per second.
+
+    Args:
+        speed_dps: Speed to check.
+
+    Raises:
+        ValueError: If it is not a number > 0.
+    """
+    _check_number("speed_dps", speed_dps)
+    if speed_dps <= 0:
+        raise ValueError("speed_dps must be > 0 degrees per second, or None")
+
+
+def _check_pulses(min_us, max_us):
+    """Check the pulse-width calibration.
+
+    Args:
+        min_us: Pulse at the lowest angle, in microseconds.
+        max_us: Pulse at the highest angle, in microseconds.
+
+    Raises:
+        ValueError: If either is not a number, or not
+            100 <= min_us < max_us <= 3000.
+    """
+    _check_number("min_pulse_us", min_us)
+    _check_number("max_pulse_us", max_us)
+    if not _PULSE_MIN_US <= min_us < max_us <= _PULSE_MAX_US:
+        raise ValueError(
+            "need {} <= min_pulse_us < max_pulse_us <= {}, got {} and {}".format(
+                _PULSE_MIN_US, _PULSE_MAX_US, min_us, max_us
+            )
+        )
+
+
+def _check_angle_range(angle_range):
+    """Check ``angle_range`` and return it as two numbers.
+
+    Args:
+        angle_range: ``(lowest, highest)`` angle in degrees.
+
+    Returns:
+        tuple: ``(lowest, highest)``.
+
+    Raises:
+        ValueError: If it is not two numbers with lowest < highest.
+    """
+    try:
+        low, high = angle_range
+    except (TypeError, ValueError):
+        raise ValueError("angle_range must be (lowest, highest)") from None
+    _check_number("angle_range[0]", low)
+    _check_number("angle_range[1]", high)
+    if not low < high:
+        raise ValueError("angle_range must have lowest < highest")
+    return low, high

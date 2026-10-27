@@ -34,6 +34,10 @@ dependencies = []
 gpio = [
     "gpiozero>=2.0"
 ]
+# I2C on Raspberry Pi OS (PCA9685; ADS1x15 after its Step 5 conversion).
+i2c = [
+    "smbus2>=0.4"
+]
 # Deprecated alias for "gpio" (was RPi.GPIO before 0.2.0); remove in 0.3.0.
 pi = [
     "gpiozero>=2.0"
@@ -98,7 +102,6 @@ convention = "google"
 "src/rpi_app_framework/linux_ble_gatt.py" = ["D", "F401"]
 "src/rpi_app_framework/microdot_manager.py" = ["D", "B904"]
 "src/rpi_app_framework/motion_detector.py" = ["D", "F401"]
-"src/rpi_app_framework/positional_servo_manager.py" = ["D", "F401"]
 "src/rpi_app_framework/power_monitor.py" = ["D"]
 "src/rpi_app_framework/sound_mixer.py" = ["D"]
 "src/rpi_app_framework/sound_stream.py" = ["D"]
