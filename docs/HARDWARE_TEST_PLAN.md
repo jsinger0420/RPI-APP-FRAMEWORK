@@ -7,7 +7,7 @@ matching ROADMAP items ☑ and delete the finished sections here.
 Boards: Pico 2 W (MicroPython, Thonny), Pi 4 and Pi 5 (Raspberry Pi OS, with
 `pip install -e .[gpio]` or the preinstalled gpiozero).
 
-**Test from `main`.** All branches below are merged and deleted (2026-10-27), so the
+**Test from `main`.** All branches below are merged and deleted (2026-10-27; #30 on 2026-10-28), so the
 section headings name the branch a change came from, not something to check out. On
 a Pico, install from `main` with `mpremote mip install github:jsinger0420/RPI-APP-FRAMEWORK`
 or copy `src/rpi_app_framework/` to `/lib`; reinstall after pulling fixes. A bug found
@@ -32,7 +32,7 @@ here becomes a `fix/<topic>` branch off `main`.
 | 13 | `feature/audio` | ☑ | ☑ #26 |
 | 14 | `feature/camera` | ☑ | ☑ #27 |
 | 15 | `chore/packaging` | ☑ | ☑ #28 |
-| 16 | `fix/camera-exposure` | ☐ | ☐ |
+| 16 | `fix/camera-exposure` | ☑ | ☑ #30 |
 
 Branch 12 (ADR-011) only removes `MotionDetector`; it has no hardware test.
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`; the device tests
@@ -423,7 +423,7 @@ Setup: `docs/devices/camera.md` (`sudo apt install python3-picamera2 ffmpeg`; ve
 
 ## 16. Camera exposure — `fix/camera-exposure` (Raspberry Pi only)
 
-Not merged yet: check out `fix/camera-exposure` on the Pi. Board: Pi Zero 2 W
+Merged (#30): test from `main`. Board: Pi Zero 2 W
 (Bookworm) with the IMX219 NoIR; setup as in § 14. Program: the night example below
 (or the `Watch` example with `set_exposure()` / `set_auto_exposure()` calls).
 
