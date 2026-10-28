@@ -7,6 +7,13 @@ All notable changes to this project are documented here. Format based on
 ## [Unreleased]
 
 ### Added
+- `CameraDeviceManager` exposure control: `set_exposure(exposure_us, gain=1.0,
+  awb_gains=None, wait=True, timeout=None)` for manual exposure up to the sensor's
+  limit (multi-second night shots; the frame period is lengthened to fit),
+  `set_auto_exposure()` back to auto exposure/white balance at the original frame
+  rate, the `exposure` property (settings requested) and `get_metadata()` (what the
+  camera actually did: exposure, gain, colour gains, lux). Both setters can wait until
+  frames carry the new settings. No existing behaviour changes.
 - Sound (on the device contract; module `rpi_app_framework.i2s_dac`):
   `I2SDACDeviceManager` plays 16-bit mono audio on a MAX98357A I2S DAC with
   `machine.I2S` on the Pico or ALSA on Raspberry Pi OS (`audio` extra); `write()`,

@@ -35,12 +35,23 @@ cam = CameraDeviceManager("cam", resolution=(1280, 720), app=self)
 | `start_recording(path=None, bitrate=10_000_000)` / `stop_recording()` | H.264 into an MP4 via ffmpeg; returns the path. The camera keeps running for photos. |
 | `is_recording` | True while recording. |
 | `start_preview(backend="qtgl")` / `stop_preview()` | Preview window (`"qtgl"` desktop, `"drm"` console, `"null"`). |
+| `set_exposure(exposure_us, gain=1.0, awb_gains=None, wait=True, timeout=None)` | Manual exposure: auto exposure off, exposure time in µs and analogue gain within the sensor's range (IMX219: 75 µs–~11.7 s, gain 1–~10.7). `awb_gains=(red, blue)` also fixes white balance; `None` leaves it. Lengthens the frame period when the exposure needs it (shorter exposures keep the original frame rate). With `wait=True` returns `True` once a frame shows the new settings, `False` (logged) on timeout. `RuntimeError` while recording. |
+| `set_auto_exposure(wait=True, timeout=None)` | Auto exposure and auto white balance again, at the configuration's original frame rate. Same return value; allowed while recording. |
+| `exposure` | Settings last requested: `{"mode": "auto"/"manual", "exposure_us", "gain", "awb_gains"}`. |
+| `get_metadata()` | Metadata of the next frame (`ExposureTime`, `AnalogueGain`, `ColourGains`, `Lux`, `FrameDuration`...): what the camera actually did. |
 | `picam2` | The `Picamera2` object for anything else (controls, autofocus, HDR...). |
 | `close()` | Finish any recording, close the preview, stop and release the camera. Idempotent. |
 
 ## Platform differences
 Raspberry Pi OS only; `NotImplementedError` on the Pico. On the Pi 5 there is no
 hardware H.264 encoder: picamera2 encodes in software, which costs CPU at 1080p.
+
+Night exposures: settings apply a few frames late, and the frames already queued (6
+buffers in the video configuration) were taken with the old settings. With 4 s frames
+the first correct frame can be ~30 s after `set_exposure()`; the default timeout is
+`(buffers + 3) × longer frame period + 2 s` (38 s for 30 fps → 4 s). Photos, frames and
+the MJPEG stream keep working at one frame per exposure (0.25 fps at 4 s). Deciding
+*when* it is night is up to the app (e.g. `get_metadata()["Lux"]` with hysteresis).
 
 ## Safe state
 `close()` (app stop, Ctrl-C, crash with `app=self`) finishes the MP4 so the file is
@@ -49,6 +60,9 @@ playable, then releases the camera for other programs.
 ## Known issues / TODO
 - One configuration (video, RGB888) for everything; full-resolution stills would need a
   mode switch (`picam2.switch_mode_and_capture_file`).
+- Fewer buffers would shorten the day/night switch and save memory on a Pi Zero 2 W;
+  there is no `buffer_count` option yet.
+- `Lux` in manual mode at long exposures is not yet verified on the IMX219.
 - Recording stops the camera briefly (picamera2 behaviour); it is restarted at once.
 - Not yet verified on a Pi 4 or Pi 5.
 
