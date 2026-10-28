@@ -45,11 +45,61 @@ class FakePicamera2:
         self.options = {}
         self.started = False
         self.recording = None
+        # IMX219-like ranges: (min, max, default).
+        self.camera_controls = {
+            "ExposureTime": (75, 11766829, 20000),
+            "AnalogueGain": (1.0, 10.666667, 1.0),
+            "FrameDurationLimits": (33333, 11767556, 33333),
+        }
+        self.controls_sent = []
+        self.stale_frames = 2
+        self.exposure_error = 1.0
+        self._pending = None
+        self.metadata = {
+            "ExposureTime": 20000,
+            "AnalogueGain": 1.0,
+            "ColourGains": (1.6, 1.8),
+            "Lux": 400.0,
+            "FrameDuration": 33333,
+        }
         FakePicamera2.instances.append(self)
 
     def create_video_configuration(self, main=None):
-        """Return a config dict."""
-        return {"main": main}
+        """Return a config dict like picamera2's (30 fps, 6 buffers)."""
+        return {
+            "main": main,
+            "buffer_count": 6,
+            "controls": {"FrameDurationLimits": (33333, 33333)},
+        }
+
+    def set_controls(self, controls):
+        """Record the controls; they apply after ``stale_frames`` frames."""
+        self.controls_sent.append(dict(controls))
+        self._pending = [dict(controls), self.stale_frames]
+
+    def capture_metadata(self):
+        """Return the next frame's metadata (old settings while stale)."""
+        if self._pending is not None:
+            controls, stale = self._pending
+            if stale > 0:
+                self._pending[1] -= 1
+            else:
+                self._apply(controls)
+                self._pending = None
+        return dict(self.metadata)
+
+    def _apply(self, controls):
+        """Update the metadata as the sensor would."""
+        md = self.metadata
+        if controls.get("AeEnable") is False:
+            md["ExposureTime"] = int(controls["ExposureTime"] * self.exposure_error)
+            md["AnalogueGain"] = controls["AnalogueGain"]
+        elif controls.get("AeEnable"):
+            md["ExposureTime"], md["AnalogueGain"] = 20000, 1.0
+        if "ColourGains" in controls:
+            md["ColourGains"] = controls["ColourGains"]
+        if "FrameDurationLimits" in controls:
+            md["FrameDuration"] = controls["FrameDurationLimits"][1]
 
     def configure(self, config):
         """Store the config."""
@@ -183,7 +233,7 @@ def test_camera_opens_configures_starts(picam, tmp_path):
     cam, lines = make_cam(tmp_path, resolution=(640, 480), camera_num=1)
     hw = picam.instances[-1]
     assert hw.camera_num == 1 and hw.started
-    assert hw.config == {"main": {"size": (640, 480), "format": "RGB888"}}
+    assert hw.config["main"] == {"size": (640, 480), "format": "RGB888"}
     assert not os.path.exists(tmp_path / "photos")  # created on first use
     assert lines[-1] == "[cam] ready: camera 1 at 640x480"
 
@@ -291,6 +341,180 @@ def test_failed_open_is_closed_by_app(picam):
     with pytest.raises(RuntimeError, match="Camera"):
         app.start()
     assert app.devices == ()
+
+
+# --- exposure ----------------------------------------------------------------------
+
+
+@linux_only
+def test_set_exposure_sends_manual_controls(picam, tmp_path):
+    """A 4 s exposure turns AE off and stretches the frame to fit; AWB is untouched."""
+    cam, lines = make_cam(tmp_path)
+    hw = picam.instances[-1]
+    assert cam.exposure["mode"] == "auto"
+    assert cam.set_exposure(4_000_000, gain=8) is True
+    assert hw.controls_sent[-1] == {
+        "AeEnable": False,
+        "ExposureTime": 4_000_000,
+        "AnalogueGain": 8.0,
+        "FrameDurationLimits": (4_000_000, 4_000_000),
+    }
+    assert cam.exposure == {
+        "mode": "manual",
+        "exposure_us": 4_000_000,
+        "gain": 8.0,
+        "awb_gains": None,
+    }
+    assert "[cam] exposure manual: 4000000 us, gain 8" in lines
+    assert lines[-1].startswith("[cam] exposure settled after")
+    md = cam.get_metadata()
+    assert md["ExposureTime"] == 4_000_000 and md["AnalogueGain"] == 8.0
+
+
+@linux_only
+def test_short_exposure_keeps_frame_rate(picam, tmp_path):
+    """An exposure shorter than a frame keeps the original 30 fps limits."""
+    cam, _ = make_cam(tmp_path)
+    cam.set_exposure(10_000, wait=False)
+    assert picam.instances[-1].controls_sent[-1]["FrameDurationLimits"] == (
+        33333,
+        33333,
+    )
+
+
+@linux_only
+def test_set_exposure_awb_gains(picam, tmp_path):
+    """awb_gains fixes white balance."""
+    cam, lines = make_cam(tmp_path)
+    hw = picam.instances[-1]
+    cam.set_exposure(4_000_000, gain=8, awb_gains=(1, 1))
+    sent = hw.controls_sent[-1]
+    assert sent["AwbEnable"] is False and sent["ColourGains"] == (1.0, 1.0)
+    assert cam.exposure["awb_gains"] == (1.0, 1.0)
+    assert "[cam] exposure manual: 4000000 us, gain 8, awb 1/1" in lines
+    assert cam.get_metadata()["ColourGains"] == (1.0, 1.0)
+
+
+@linux_only
+def test_set_auto_exposure_restores_defaults(picam, tmp_path):
+    """Auto mode turns AE and AWB back on with the configuration's 30 fps limits."""
+    cam, lines = make_cam(tmp_path)
+    hw = picam.instances[-1]
+    cam.set_exposure(4_000_000, gain=8, awb_gains=(1, 1))
+    assert cam.set_auto_exposure() is True
+    assert hw.controls_sent[-1] == {
+        "AeEnable": True,
+        "AwbEnable": True,
+        "FrameDurationLimits": (33333, 33333),
+    }
+    assert cam.exposure["mode"] == "auto" and cam.exposure["exposure_us"] is None
+    assert "[cam] exposure auto" in lines
+    assert lines[-1].startswith("[cam] exposure settled after")
+
+
+@linux_only
+def test_wait_times_out(picam, tmp_path):
+    """If frames never show the settings, wait gives up, logs and returns False."""
+    cam, lines = make_cam(tmp_path)
+    picam.instances[-1].stale_frames = 10**9
+    assert cam.set_exposure(4_000_000, gain=8, timeout=0.05) is False
+    assert lines[-1].startswith("[cam] exposure not settled after 0.05 s")
+    assert "20000 us" in lines[-1]
+    assert cam.exposure["mode"] == "manual"  # requested, just not seen yet
+
+
+@linux_only
+def test_auto_wait_times_out(picam, tmp_path):
+    """Back to auto: frames still 4 s long until the queue drains."""
+    cam, lines = make_cam(tmp_path)
+    hw = picam.instances[-1]
+    cam.set_exposure(4_000_000, gain=8)
+    hw.stale_frames = 10**9
+    assert cam.set_auto_exposure(timeout=0.05) is False
+    assert lines[-1].startswith("[cam] exposure not settled")
+
+
+@linux_only
+def test_wait_false_returns_at_once(picam, tmp_path):
+    """wait=False does not read any frames."""
+    cam, _ = make_cam(tmp_path)
+    picam.instances[-1].stale_frames = 10**9
+    assert cam.set_exposure(4_000_000, wait=False) is True
+    assert cam.set_auto_exposure(wait=False) is True
+
+
+@linux_only
+def test_rounded_exposure_counts_as_settled(picam, tmp_path):
+    """The sensor rounds exposure to whole lines: 1 % off is settled."""
+    cam, _ = make_cam(tmp_path)
+    picam.instances[-1].exposure_error = 1.01
+    assert cam.set_exposure(4_000_000, gain=8, timeout=0.05) is True
+
+
+@linux_only
+def test_default_timeout(picam, tmp_path):
+    """Default wait: (buffers + 3) x the longer frame period + 2 s."""
+    cam, _ = make_cam(tmp_path)
+    assert cam._default_timeout(33333, 4_000_000) == pytest.approx(38.0)
+    assert cam._default_timeout(4_000_000, 33333) == pytest.approx(38.0)
+    assert cam._default_timeout(33333, 33333) == pytest.approx(2.3, abs=0.01)
+
+
+@linux_only
+@pytest.mark.parametrize(
+    "args, kwargs, match",
+    [
+        ((0,), {}, "from 75 to 11766829"),
+        ((12_000_000,), {}, "from 75 to 11766829"),
+        ((4.5,), {}, "int"),
+        ((True,), {}, "int"),
+        ((1000,), {"gain": 11}, "gain must be from 1 to 10.6667"),
+        ((1000,), {"gain": 0.5}, "gain"),
+        ((1000,), {"gain": True}, "gain"),
+        ((1000,), {"awb_gains": (1,)}, "awb_gains"),
+        ((1000,), {"awb_gains": (0, 1)}, "awb_gains"),
+        ((1000,), {"awb_gains": (1, 33)}, "awb_gains"),
+        ((1000,), {"awb_gains": (True, 1)}, "awb_gains"),
+        ((1000,), {"timeout": 0}, "timeout"),
+        ((1000,), {"timeout": -1}, "timeout"),
+    ],
+)
+def test_set_exposure_bad_arguments(picam, tmp_path, args, kwargs, match):
+    """Bad values raise ValueError naming the range; nothing is sent."""
+    cam, _ = make_cam(tmp_path)
+    with pytest.raises(ValueError, match=match):
+        cam.set_exposure(*args, **kwargs)
+    assert picam.instances[-1].controls_sent == []
+    with pytest.raises(ValueError, match="timeout"):
+        cam.set_auto_exposure(timeout=0)
+
+
+@linux_only
+def test_sensor_without_ranges(picam, tmp_path):
+    """If the sensor reports no ranges, only positive values are required."""
+    cam, _ = make_cam(tmp_path)
+    picam.instances[-1].camera_controls = {}
+    assert cam.set_exposure(20_000_000, gain=20, wait=False) is True
+    with pytest.raises(ValueError, match="> 0"):
+        cam.set_exposure(0)
+
+
+@linux_only
+def test_exposure_while_recording_and_after_close(picam, tmp_path):
+    """Manual exposure is refused while recording; everything after close()."""
+    cam, _ = make_cam(tmp_path)
+    cam.start_recording()
+    with pytest.raises(RuntimeError, match="recording"):
+        cam.set_exposure(4_000_000)
+    assert cam.set_auto_exposure(wait=False) is True  # allowed
+    cam.close()
+    for call in (
+        lambda: cam.set_exposure(1000),
+        cam.set_auto_exposure,
+        cam.get_metadata,
+    ):
+        with pytest.raises(RuntimeError):
+            call()
 
 
 # --- MJPEG streaming ----------------------------------------------------------------

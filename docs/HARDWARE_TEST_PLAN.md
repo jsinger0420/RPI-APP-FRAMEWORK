@@ -32,6 +32,7 @@ here becomes a `fix/<topic>` branch off `main`.
 | 13 | `feature/audio` | ☑ | ☑ #26 |
 | 14 | `feature/camera` | ☑ | ☑ #27 |
 | 15 | `chore/packaging` | ☑ | ☑ #28 |
+| 16 | `fix/camera-exposure` | ☐ | ☐ |
 
 Branch 12 (ADR-011) only removes `MotionDetector`; it has no hardware test.
 Branch 4 (ADR-005) only moves the pin checks into `_platform.py`; the device tests
@@ -420,3 +421,42 @@ Setup: `docs/devices/camera.md` (`sudo apt install python3-picamera2 ffmpeg`; ve
 - ☐ Pi 4 / Pi 5: `blink.py` and `led_lifecycle_demo.py` with `LED_PIN = 17`,
   `board_info.py`, `web_led.py` (page on port 8080), `servo_sweep.py` (I2C bus 1).
 
+## 16. Camera exposure — `fix/camera-exposure` (Raspberry Pi only)
+
+Not merged yet: check out `fix/camera-exposure` on the Pi. Board: Pi Zero 2 W
+(Bookworm) with the IMX219 NoIR; setup as in § 14. Program: the night example below
+(or the `Watch` example with `set_exposure()` / `set_auto_exposure()` calls).
+
+- ☐ At night, `set_exposure(4_000_000, gain=8, awb_gains=(1, 1))`: `get_metadata()`
+  reports ~4 s and gain 8; the frame looks like
+  `rpicam-still --shutter 4000000 --gain 8 --awbgains 1,1`.
+- ☐ Longest exposure: `set_exposure` near the sensor maximum (~11.7 s) works; just
+  above it raises `ValueError` naming the range.
+- ☐ Time from `set_exposure()` to returning `True` (record seconds; the default
+  timeout is 38 s at 30 fps → 4 s).
+- ☐ `set_auto_exposure()` returns to the normal frame rate; the live view is smooth.
+- ☐ Live view stays up during 4 s exposures (~0.25 fps); switching modes while a
+  browser is watching causes no errors (MJPEG thread + `set_controls`).
+- ☐ `Lux` metadata in manual mode at dusk and dawn: does it track the scene?
+- ☐ Memory: free RAM with the camera at 1640x1232 in manual mode (`free -m`).
+- ☐ Ctrl-C during a 4 s exposure: the app stops within one frame and the camera is
+  released.
+
+```python
+from rpi_app_framework import RPIApp
+from rpi_app_framework.camera import CameraDeviceManager
+
+
+class Night(RPIApp):
+    def setup(self):
+        self.cam = CameraDeviceManager("cam", resolution=(1640, 1232), app=self)
+        self.cam.set_exposure(4_000_000, gain=8.0, awb_gains=(1.0, 1.0))
+        self.log(str(self.cam.get_metadata()))
+
+    def loop(self):
+        self.cam.capture_image()
+        self.log("lux {}".format(self.cam.get_metadata().get("Lux")))
+
+
+Night(app_name="Night", loop_interval=10.0).start()
+```

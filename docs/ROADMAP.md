@@ -142,6 +142,10 @@ merged); ☑ after the hardware test.
       tested over real HTTP); device docs. Camera is a `DeviceManager`, opens at
       construction, no hardcoded paths, no OpenCV/Pillow/MP4Box (picamera2's own JPEG
       and ffmpeg output); one frame grabber shared by all viewers. Never released.
+- ◐ Camera exposure · `fix/camera-exposure` — `set_exposure()`,
+      `set_auto_exposure()`, `exposure`, `get_metadata()` on `CameraDeviceManager`
+      (manual/long exposures for night shots; first user: Critter Counter, Pi Zero 2 W
+      + IMX219 NoIR). Tests in `tests/test_camera.py`; hardware test plan § 16.
 - ◐ Vision: `MotionDetector` removed from the package (ADR-011) ·
       `chore/remove-motion-detector`. A redesign is in the backlog.
 
